@@ -1,0 +1,57 @@
+HELIOTROPE
+----------
+
+Heliotrope is a lightweight, search-centric, document-tree store.
+In contrast with document-oriented databases like SimpleDB and CouchDB,
+Heliotrope:
+  - explicitly models document trees as well as individual documents.
+  - is biased towards fielded, full-text search as the primary access
+    mechanism.
+  - does not make any general ACID guarantees, or support general atomic
+    operations across multiple documents or document trees. (Details
+    below.)
+  - imposes certain types of assumptions on document fields. For
+    example, that a document's "content" field can be very large, but
+    that its "metadata" fields are not.
+
+Atomicity, concurrency, etc: Heliotrope supports certain coarse-grained
+guarantees, namely:
+  - Calls to the add_document are atomic, and lock the entire server. In
+    other words, while the call is occurring, all other reads (e.g.
+    search) and writes (e.g. add_document) are suspended, and should the
+    call fail (and an exception be delivered to the client), none of the
+    documents are added to the system.
+  - Calls to search may or may not lock the server for reads and/or
+    writes.
+
+The search mechanism in Heliotrope operates on document trees, and
+provides standard search semantics: positive searches return trees with
+at least one document matching; negative searches exclude trees in which
+any document matches the search. For performance reasons, purely
+negative queries are not processed; negative search terms/phrases only
+function when combined with positive ones.
+
+Heliotrope uses Thrift to provide a remote method invocation and set of
+datatypes that can be easily used from clients written in different
+languages. See thrift/heliotrope.thrift for the service and datatype
+definitions.
+
+Heliotrope is meant to be a flexible service layer that specific
+services will implement. For example, although Heliotrope Thrift
+interface is completely general, a specific Heliotrope service defines a
+specific document schema that clients must adhere to, and can implement
+any server-side computation necessary to define the semantics of the
+service. In this case, a "schema" is both the set of required/optional
+key-value pairs in the "metadata" field, and the search behavior of such
+fields. 
+
+SALTLICK
+--------
+Saltlick is a Heliotrope service that provides some email-specific
+logic, specifically, heuristic email threading based on References: and
+In-reply-to: headers, and a document schema mimicks Sup and Gmail search
+queries.
+
+Although it provides email-specific logic, Saltlick supports arbitrary
+document types.
+
