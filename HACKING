@@ -1,2 +1,0 @@
-To run the Sphinx tests, you'll need a symbolic link called "sphinx-binaries"
-which points to the Sphinx 0.9.8 binaries.

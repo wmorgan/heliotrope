@@ -1,5 +1,0 @@
-require 'test/counter-test'
-require 'test/index-test'
-require 'test/quarker-test'
-require 'test/store-test'
-require 'test/test-helper'
