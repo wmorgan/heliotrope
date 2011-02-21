@@ -123,6 +123,6 @@ class Decoder
     #out.force_encoding target_charset if in_ruby19_hell? # not necessary?
     out
   end
-end
+  end
 end
 end

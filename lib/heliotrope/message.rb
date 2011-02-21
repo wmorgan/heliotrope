@@ -10,8 +10,6 @@ class Message
     @mime_parts = {}
   end
 
-  WHITESPACE = /[\n\s\r\t]+/
-
   def parse!
     @m = RMail::Parser.read @rawbody
 
@@ -65,7 +63,7 @@ class Message
       ).flatten.compact.join(" ")
 
       v.gsub(/\s+[\W\d_]+(\s|$)/, " "). # drop funny tokens
-        gsub(WHITESPACE, " ")
+        gsub(/\s+/, " ")
     end
   end
 
@@ -115,7 +113,7 @@ private
   end
 
   def mime_type_for part
-    (part.header["content-type"] || "text/plain").gsub(WHITESPACE, " ").strip
+    (part.header["content-type"] || "text/plain").gsub(/\s+/, " ").strip
   end
 
   ## a filename, or nil
@@ -143,7 +141,7 @@ private
       Decoder.transcode "utf-8", "ascii", v
     end
 
-    v.gsub(WHITESPACE, " ").strip
+    v.gsub(/\s+/, " ").strip
   end
 
   CONVERSIONS = {

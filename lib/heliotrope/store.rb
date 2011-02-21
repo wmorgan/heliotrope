@@ -2,8 +2,6 @@ require 'whistlepig'
 require 'oklahoma_mixer'
 require 'set'
 
-require "heliotrope"
-
 module Heliotrope
 class Store
   QUERY_FILTER = Whistlepig::Query.new "", "-~deleted" # always filter out deleted messages
