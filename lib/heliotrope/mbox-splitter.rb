@@ -11,23 +11,11 @@ class MboxSplitter
     @stream = stream
   end
 
+  ## total hack. but all such things are.
   def is_mbox_break_line? l
     l[0, 5] == "From " or return false
     l =~ BREAK_RE or return false
-    return true
-
-    ## this next check slows us down so i'm skipping it for now
-
-    time = $1
-    begin
-      puts "parsing: #{time}"
-      ## hack -- make Time.parse fail when trying to substitute values from Time.now
-      Time.parse time, 0
-      true
-    rescue NoMethodError, ArgumentError
-      puts "# skipping false positive From line #{l.inspect}"
-      false
-    end
+    true
   end
 
   def next_message
