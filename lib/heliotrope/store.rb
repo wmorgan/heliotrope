@@ -155,6 +155,12 @@ class Store
     @seen_threads = {}
   end
 
+  def reset_query!
+    @index.teardown_query @query.whistlepig_q
+    @index.setup_query @query.whistlepig_q
+    @seen_threads = {}
+  end
+
   def get_some_results num
     return [] unless @query
 
