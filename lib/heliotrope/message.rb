@@ -154,30 +154,25 @@ private
   def mime_content_for mime_part, preferred_type
     return "" unless mime_part.body # sometimes this happens. not sure why.
 
-    mt = mime_type_for mime_part
-    source_charset = if mt && mt =~ /charset="?(.*?)"?(;|$)/i
-      $1
+    mt = mime_type_for(mime_part) || "text/plain" # i guess
+    content_type = if mt =~ /^(.+);/ then $1.downcase else mt end
+    source_charset = if mt =~ /charset="?(.*?)"?(;|$)/i then $1 else "US-ASCII" end
+
+    content = mime_part.decode
+    converted_content = if(converter = CONVERSIONS[[content_type, preferred_type]])
+      send converter, content
     else
-      "US-ASCII" # guess at what it is
+      content
     end
 
-    ret = mime_part.decode
-    if mt =~ /text\//i
-      ret = Decoder.transcode "utf-8", source_charset, ret
-    end
-
-    if mt =~ /^(.+);/
-      mt = $1
-    end
-
-    if(converter = CONVERSIONS[[mt, preferred_type]])
-      send converter, ret
+    if content_type =~ /^text\//
+      Decoder.transcode "utf-8", source_charset, converted_content
     else
-      ret # non-text, don't transcode
+      converted_content
     end
   end
 
-  CMD = "html2text -nometa"
+  CMD = "html2text"
   def html_to_text html
     puts "; forced to decode html. running #{CMD} on #{html.size}b mime part..."
     Open3.popen3(CMD) do |inn, out, err|
