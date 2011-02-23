@@ -42,16 +42,40 @@ class HeliotropeTest < ::Test::Unit::TestCase
     @store = Store.new TEST_DIR
   end
 
+  def teardown
+    @store.close
+    FileUtils.rm_rf TEST_DIR
+  end
+
   def test_size
     assert_equal 0, @store.size
 
     m1 = MockMessage.new
-    @store.add_message m1, 0, {}, {}
+    x = @store.add_message m1, 0, {}, {}
     assert_equal 1, @store.size
 
     m2 = MockMessage.new
     @store.add_message m2, 0, {}, {}
     assert_equal 2, @store.size
+  end
+
+  def test_adding_duplicate_messages_does_nothing
+    m1 = MockMessage.new :msgid => "a"
+    @store.add_message m1, 0, {}, {}
+    assert_equal 1, @store.size
+
+    m2 = MockMessage.new :msgid => "a"
+    @store.add_message m2, 0, {}, {}
+    assert_equal 1, @store.size
+  end
+
+  def test_added_messages_are_available_in_search
+    m1 = MockMessage.new :indexable_text => "hello bob"
+    docid, threadid = @store.add_message m1, 0, {}, {}
+    @store.set_query Query.new("body", "hello")
+    results = @store.get_some_results 100
+    assert_equal 1, results.size
+    assert_equal threadid, results.first[:thread_id]
   end
 
 end
