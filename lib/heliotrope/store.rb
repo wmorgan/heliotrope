@@ -41,6 +41,13 @@ class Store
   def add_message message, offset, state, labels
     raise ArgumentError, "invalid offset #{offset.inspect}" unless offset && offset >= 0
 
+    key = "docid/#{message.msgid}"
+    if contains_key? key
+      docid = load_int key
+      threadid = load_int "thread/#{docid}"
+      return [docid, threadid]
+    end
+
     state = Set.new state
     state &= MESSAGE_MUTABLE_STATE # filter to the only states the user can set
     state << "attachment" if message.has_attachment? # set any immutable state
