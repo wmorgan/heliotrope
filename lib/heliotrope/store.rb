@@ -185,17 +185,16 @@ class Store
 
   def load_threadinfo threadid
     h = load_thread threadid
-    h.merge! :thread_id => threadid
-    h.merge! :state => load_set("tstate/#{threadid}")
-    h.merge! :labels => load_set("tlabels/#{threadid}")
-    h
+    h.merge! :thread_id => threadid,
+      :state => load_set("tstate/#{threadid}"),
+      :labels => load_set("tlabels/#{threadid}")
   end
 
   def load_messageinfo docid
     h = load_hash "doc/#{docid}"
-    h.merge! :state => load_set("state/#{docid}")
-    h.merge! :message_id => docid
-    h
+    h.merge :state => load_set("state/#{docid}"),
+      :thread_id => load_int("threadid/#{docid}"),
+      :message_id => docid
   end
 
   def load_thread_messageinfos threadid
