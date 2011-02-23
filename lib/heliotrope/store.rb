@@ -90,7 +90,7 @@ class Store
     write_set key, new_mstate
 
     ## recalc thread state and labels
-    threadid = load_string "threadid/#{docid}"
+    threadid = load_int "threadid/#{docid}"
     threadinfo = load_hash "thread/#{threadid}"
     old_tstate = load_set "tstate/#{threadid}"
 
@@ -147,7 +147,7 @@ class Store
     until threadids.size >= num
       docid = @index.run_query(@query.whistlepig_q, 1).first
       break unless docid
-      threadid = load_string "threadid/#{docid}"
+      threadid = load_int "threadid/#{docid}"
       raise "no threadid for doc #{docid}" unless threadid
       next if @seen_threads[threadid]
       @seen_threads[threadid] = true
@@ -192,7 +192,7 @@ private
       while true
         docids = @index.run_query query.whistlepig_q, 1000
         docids.each do |docid|
-          thread_id = load_string "threadid/#{docid}"
+          thread_id = load_int "threadid/#{docid}"
           thread_ids << thread_id
         end
         break if docids.size < 1000
@@ -209,7 +209,7 @@ private
   ## labels from each message
   def calc_thread_state thread_structure
     thread_structure.flatten.inject(Set.new) do |set, docid|
-      if docid.is_a? String # pseudo-root
+      if docid < 0 # pseudo-root
         set
       else
         set + load_set("state/#{docid}")
@@ -221,7 +221,7 @@ private
   ## search to work properly.
   def write_thread_message_labels! thread_structure, labels
     thread_structure.flatten.each do |docid|
-      next if docid.is_a? String # psuedo-root
+      next if docid < 0 # psuedo-root
       key = "mlabels/#{docid}"
       oldlabels = load_set key
       write_set key, labels
@@ -232,7 +232,7 @@ private
 
   def load_structured_messageinfo thread_structure, level=0
     id, *children = thread_structure
-    doc = if id.is_a?(String)
+    doc = if id < 0
       {:type => "fake"}
     else
       load_messageinfo(id)
@@ -303,8 +303,8 @@ private
     ## write the thread ids for all documents. we need this at search time to
     ## do the message->thread mapping.
     thread_structure.flatten.each do |id|
-      next if id.is_a? String # pseudo root
-      write_string "threadid/#{id}", threadid
+      next if id < 0 # pseudo root
+      write_int "threadid/#{id}", threadid
     end
 
     @thread_time += (Time.now - startt)
@@ -337,7 +337,8 @@ private
       when 0; nil
       when 1; child_thread_structures.first
       else # need to make a psuedo root
-        ["~#{child_thread_structures.first.first}"] + child_thread_structures
+        psuedo_root = -child_thread_structures.first.first # weird?
+        [psuedo_root] + child_thread_structures
       end
     end
   end
@@ -345,7 +346,7 @@ private
   def write_threadinfo! threadid, thread_structure, labels, state
     subject = date = from = to = has_attachment = nil
 
-    docids = thread_structure.flatten.select { |x| x.is_a? Numeric }.sort_by { |x| -x }
+    docids = thread_structure.flatten.select { |x| x > 0 }.sort_by { |x| -x }
     messages = docids.map { |id| load_hash("doc/#{id}") }
 
     date = messages.map { |m| m[:date] }.max
