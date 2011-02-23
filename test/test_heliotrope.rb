@@ -78,4 +78,31 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_equal threadid, results.first[:thread_id]
   end
 
+  def test_added_message_state_is_preserved
+    m1 = MockMessage.new
+    docid, threadid = @store.add_message m1, 0, %w(unread), {}
+
+    summary = @store.load_messageinfo docid
+    assert_equal %w(unread), docid[:state]
+  end
+
+  def test_added_message_state_is_searchable_via_labels
+    @store.set_query Query.new("body", "~unread")
+    assert_equal 0, @store.num_results
+
+    m1 = MockMessage.new
+    docid, threadid = @store.add_message m1, 0, %w(unread), {}
+
+    assert_equal 1, @store.num_results
+  end
+
+  def test_added_message_state_is_modifiable
+  end
+
+  def test_message_state_ignores_random_stuff
+  end
+
+  def test_added_message_state_is_preserved
+  end
+
 end
