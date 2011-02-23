@@ -2,6 +2,24 @@ require 'whistlepig'
 require 'oklahoma_mixer'
 require 'set'
 
+class Array
+  def ordered_uniq
+    s = Set.new
+    select { |e| !s.member?(e) && s.add(e) }
+  end
+
+  def max_by
+    inject([nil, nil]) do |(maxe, maxv), e|
+      v = yield e
+      if maxv.nil? || v > maxv
+        [e, v]
+      else
+        [maxe, maxv]
+      end
+    end.first
+  end
+end
+
 module Heliotrope
 class Store
   QUERY_FILTER = Whistlepig::Query.new "", "-~deleted" # always filter out deleted messages
@@ -346,18 +364,17 @@ private
   def write_threadinfo! threadid, thread_structure, labels, state
     subject = date = from = to = has_attachment = nil
 
-    docids = thread_structure.flatten.select { |x| x > 0 }.sort_by { |x| -x }
+    docids = thread_structure.flatten.select { |x| x > 0 }
     messages = docids.map { |id| load_hash("doc/#{id}") }
 
-    date = messages.map { |m| m[:date] }.max
-    participants = messages.inject(Set.new) { |s, m| s + [m[:from]] + m[:to] }
+    participants = messages.map { |m| m[:from] }.ordered_uniq
+    last_message = messages.max_by { |m| m[:date] }
 
     threadinfo = {
-      :subject => messages.last[:subject],
-      :date => date,
-      :participants => participants.to_a,
+      :subject => last_message[:subject],
+      :date => last_message[:date],
+      :participants => participants,
       :size => docids.size,
-      :has_attachment => messages.any? { |m| m[:has_attachment] },
       :structure => thread_structure,
     }
 
