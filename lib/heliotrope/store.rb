@@ -216,7 +216,6 @@ private
         break if docids.size < 1000
       end
       elapsed = Time.now - startt
-      printf "# count all results %.1fms\n", 1000 * elapsed
     ensure
       @index.teardown_query query.whistlepig_q
     end

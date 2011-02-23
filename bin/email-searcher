@@ -9,9 +9,9 @@ require 'readline'
 
 require "heliotrope"
 
-FROM_SIZE = 15
+FROM_SIZE = 20
 MSG_FROM_SIZE = 72
-SUBJ_SIZE = 59
+SUBJ_SIZE = 54
 DATE_SIZE = 10
 TOTAL_WIDTH = 100
 
@@ -39,12 +39,12 @@ results = store.get_some_results PAGE_SIZE
 start_idx = 0
 
 while true
-  header = "== [#{store.num_results}] #{query.query} "
+  header = "== [#{store.num_results}] #{query.query.display_slice(0, (TOTAL_WIDTH - 20))} "
   header += "=" * [(TOTAL_WIDTH - header.display_width), 0].max
   puts header
 
   results.each_with_index do |thread, i|
-    participants = thread[:participants].to_a.join(" ").display_slice(0, FROM_SIZE)
+    participants = thread[:participants].map { |v| Heliotrope::Person.from_string(v).name }.join(",").display_slice(0, FROM_SIZE)
     size = thread[:size]
     labels = (thread[:labels] - Heliotrope::Store::MESSAGE_STATE).map { |l| "+#{l}" }.join(" ")
     subj = (labels + " " + thread[:subject]).display_slice(0, SUBJ_SIZE)
@@ -144,7 +144,8 @@ EOS
     mid = -1
 
     while true
-      header = "-- \"#{results[tidx][:subject]}\" (#{results[tidx][:size]} messages) "
+      subj = results[tidx][:subject].display_slice(0, TOTAL_WIDTH - 20)
+      header = "-- [#{results[tidx][:size]}] \"#{subj}\""
       header += "-" * [(TOTAL_WIDTH - header.display_width), 0].max
       puts header
 
