@@ -148,12 +148,10 @@ class Store
 
   def size; @index.size end
 
-  def num_results; @num_results ||= calc_num_results end
   def set_query query
     @index.teardown_query @query.whistlepig_q if @query # new query, drop old one
     @query = query.and QUERY_FILTER
     @index.setup_query @query.whistlepig_q
-    @num_results = nil
     @seen_threads = {}
   end
 
@@ -175,7 +173,7 @@ class Store
     loadt = Time.now
     results = threadids.map { |id| load_threadinfo id }
     endt = Time.now
-    printf "# search %.1fms, load %.1fms\n", 1000 * (loadt - startt), 1000 * (endt - startt)
+    #printf "# search %.1fms, load %.1fms\n", 1000 * (loadt - startt), 1000 * (endt - startt)
     results
   end
 
@@ -199,9 +197,7 @@ class Store
     load_structured_messageinfo h[:structure]
   end
 
-private
-
-  def calc_num_results
+  def count_results
     startt = Time.now
     thread_ids = Set.new
     query = @query.clone
@@ -221,6 +217,8 @@ private
     end
     thread_ids.size
   end
+
+private
 
   ## get the message state labels for a thread by merging the message state
   ## labels from each message

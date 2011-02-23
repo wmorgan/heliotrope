@@ -34,12 +34,16 @@ store = Heliotrope::Store.new opts.dir
 #store.debug = true
 
 query = Heliotrope::Query.new "body", "~inbox"
-store.set_query query
-results = store.get_some_results PAGE_SIZE
-start_idx = 0
 
+store.set_query query
+puts "; counting results..."
+num_results = store.count_results
+puts "; got #{num_results} results"
+results = store.get_some_results PAGE_SIZE
+
+start_idx = 0
 while true
-  header = "== [#{store.num_results}] #{query.query.display_slice(0, (TOTAL_WIDTH - 20))} "
+  header = "== [#{num_results}] #{query.query.display_slice(0, (TOTAL_WIDTH - 20))} "
   header += "=" * [(TOTAL_WIDTH - header.display_width), 0].max
   puts header
 
@@ -102,10 +106,15 @@ EOS
       ## kinda hacky... downcase everything except ORs
       newquery = newquery.split(/\s+/).map { |x| x == "OR" ? x : x.downcase }.join(" ")
       newquery = Heliotrope::Query.new "body", newquery
-      puts "# parsed query is #{newquery}"
-      store.set_query newquery
+      puts "# parsed query is #{newquery.query}"
+
       query = newquery
+      store.set_query query
+      puts "; counting results..."
+      num_results = store.count_results
+      puts "; got #{num_results} results"
       results = store.get_some_results PAGE_SIZE
+
       start_idx = 0
     rescue Whistlepig::ParseError => e
       puts "Error: #{e.message}"
