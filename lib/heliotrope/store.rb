@@ -365,10 +365,11 @@ private
     messages = docids.map { |id| load_hash("doc/#{id}") }
 
     participants = messages.map { |m| m[:from] }.ordered_uniq
+    first_message = messages.first # just take the root
     last_message = messages.max_by { |m| m[:date] }
 
     threadinfo = {
-      :subject => last_message[:subject],
+      :subject => first_message[:subject],
       :date => last_message[:date],
       :participants => participants,
       :size => docids.size,
