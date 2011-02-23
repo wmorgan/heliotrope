@@ -17,7 +17,7 @@ class Person
     return if string.nil? || string.empty?
 
     name, email, handle = case string
-    when /(["'])(.+?)\\1\s*<((\S+?)@\S+?)>/
+    when /(["'])(.+?)\1\s*<((\S+?)@\S+?)>/
       [$2, $3, $4]
     when /(.+?)\s*<((\S+?)@\S+?)>/
       [$1, $2, $3]
