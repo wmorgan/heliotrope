@@ -56,7 +56,7 @@ class Store
     @index_time = @store_time = @thread_time = 0
   end
 
-  def add_message message, offset, state, labels
+  def add_message message, offset=0, state=[], labels=[]
     raise ArgumentError, "invalid offset #{offset.inspect}" unless offset && offset >= 0
 
     key = "docid/#{message.msgid}"
@@ -83,9 +83,9 @@ class Store
     threadid, thread_structure, old_labels = thread_message! message
 
     ## now calculate the labels
-    state = calc_thread_state(thread_structure)
     labels = Set.new(labels) - MESSAGE_STATE # you can't set these
-    labels += state # but i can
+    labels += merge_thread_state(thread_structure) # but i can
+    labels += merge_thread_labels(thread_structure) # you can have these, though
 
     ## write thread to store
     threadinfo = write_threadinfo! threadid, thread_structure, labels, state
@@ -112,7 +112,7 @@ class Store
     threadinfo = load_hash "thread/#{threadid}"
     old_tstate = load_set "tstate/#{threadid}"
 
-    new_tstate = calc_thread_state threadinfo[:structure]
+    new_tstate = merge_thread_state threadinfo[:structure]
     new_tlabels = nil
 
     if new_tstate != old_tstate
@@ -220,15 +220,17 @@ class Store
 
 private
 
-  ## get the message state labels for a thread by merging the message state
-  ## labels from each message
-  def calc_thread_state thread_structure
+  ## get the state for a thread by merging the state from each message
+  def merge_thread_state thread_structure
     thread_structure.flatten.inject(Set.new) do |set, docid|
-      if docid < 0 # pseudo-root
-        set
-      else
-        set + load_set("state/#{docid}")
-      end
+      set + (docid < 0 ? [] : load_set("state/#{docid}"))
+    end
+  end
+
+  ## get the labels for a thread by merging the labels from each message
+  def merge_thread_labels thread_structure
+    thread_structure.flatten.inject(Set.new) do |set, docid|
+      set + (docid < 0 ? [] : load_set("mlabels/#{docid}"))
     end
   end
 
@@ -240,8 +242,8 @@ private
       key = "mlabels/#{docid}"
       oldlabels = load_set key
       write_set key, labels
-      (oldlabels - labels).each { |l| @index.remove_label docid, l }
-      (labels - oldlabels).each { |l| @index.add_label docid, l }
+      (oldlabels - labels).each { |l| puts "; removing ~#{l} from #{docid}" if @debug; @index.remove_label docid, l }
+      (labels - oldlabels).each { |l| puts "; adding ~#{l} to #{docid}" if @debug; @index.add_label docid, l }
     end
   end
 
