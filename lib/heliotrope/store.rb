@@ -19,7 +19,7 @@ class Store
   def initialize base_dir
     #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
     #@store = PStore.new File.join(base_dir, "pstore") # sucks
-    @store = OklahomaMixer.open "store.tch"
+    @store = OklahomaMixer.open File.join(base_dir, "store.tch")
     @index = Whistlepig::Index.new File.join(base_dir, "index")
     @query = nil # we always have (at most) one active query
     @debug = false
