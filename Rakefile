@@ -20,7 +20,7 @@ task :rdoc do |t|
 end
 
 task :test do
-  sh %!ruby -Ilib:ext:bin:test test/test_heliotrope.rb!
+  sh %!ruby -rubygems -Ilib:ext:bin:test test/test_heliotrope.rb!
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
