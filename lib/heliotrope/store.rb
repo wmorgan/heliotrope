@@ -202,7 +202,7 @@ class Store
   end
 
   def load_thread_messageinfos threadid
-    h = load_thread threadid
+    h = load_thread(threadid) or return
     load_structured_messageinfo h[:structure]
   end
 
