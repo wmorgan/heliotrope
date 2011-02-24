@@ -116,7 +116,7 @@ EOS
       results = store.get_some_results PAGE_SIZE
 
       start_idx = 0
-    rescue Whistlepig::ParseError => e
+    rescue Heliotrope::Query::ParseError => e
       puts "Error: #{e.message}"
     end
   when /^label\s+(\d+)\s+([+-]?)(\w+)$/
