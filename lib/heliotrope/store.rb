@@ -30,7 +30,7 @@ class Store
   MESSAGE_MUTABLE_STATE = Set.new %w(starred unread deleted)
 
   ## flags that are set per-message but are not modifiable by the user
-  MESSAGE_IMMUTABLE_STATE = Set.new %w(attachment signed encrypted)
+  MESSAGE_IMMUTABLE_STATE = Set.new %w(attachment signed encrypted draft sent)
 
   MESSAGE_STATE = MESSAGE_MUTABLE_STATE + MESSAGE_IMMUTABLE_STATE
 
