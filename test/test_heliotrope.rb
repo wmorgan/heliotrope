@@ -343,5 +343,4 @@ private
   def assert_includes v, set # standard one seems to have these things reversed
     assert set.include?(v), "#{set.inspect[0..50]} does not include #{v.inspect}"
   end
-
 end
