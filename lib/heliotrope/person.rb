@@ -10,6 +10,8 @@ class Person
 
   def to_s; [name, "<#{email}>"].compact.join(" ") end
 
+  def display_name; name || handle || email end
+
   ## takes a string, returns a [name, email, emailnodomain] combo
   ## e.g. for William Morgan <wmorgan@example.com>, returns
   ##  ["William Morgan", wmorgan@example.com, wmorgan]
