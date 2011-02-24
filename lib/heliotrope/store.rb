@@ -82,13 +82,17 @@ class Store
     ## been joined by adding this message.
     threadid, thread_structure, old_labels = thread_message! message
 
+    ## get the thread state
+    thread_state = merge_thread_state thread_structure
+
     ## now calculate the labels
     labels = Set.new(labels) - MESSAGE_STATE # you can't set these
-    labels += merge_thread_state(thread_structure) # but i can
-    labels += merge_thread_labels(thread_structure) # you can have these, though
+    labels += thread_state # but i can
+    #labels += merge_thread_labels(thread_structure) # you can have these, though
+    labels += old_labels # you can have these, though
 
     ## write thread to store
-    threadinfo = write_threadinfo! threadid, thread_structure, labels, state
+    threadinfo = write_threadinfo! threadid, thread_structure, labels, thread_state
 
     ## add labels to every message in the thread (for search to work)
     write_thread_message_labels! thread_structure, labels

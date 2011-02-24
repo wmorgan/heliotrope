@@ -220,6 +220,22 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_equal Set.new(%w(starred)), @store.load_threadinfo(threadid1)[:state]
   end
 
+  ## this captures a bug i had
+  def test_message_state_is_propagated_to_threadinfo_even_if_it_is_just_on_the_root
+    m1 = MockMessage.new :msgid => "1", :has_attachment? => true
+    m2 = MockMessage.new :msgid => "2", :refs => ["1"]
+    m3 = MockMessage.new :msgid => "3", :refs => ["2"]
+
+    docid1, threadid1 = @store.add_message m1, 0, [], []
+    docid2, threadid2 = @store.add_message m2, 0, [], []
+    docid3, threadid3 = @store.add_message m3, 0, [], []
+
+    assert_equal threadid1, threadid2
+    assert_equal threadid2, threadid3
+
+    assert_equal Set.new(%w(attachment)), @store.load_threadinfo(threadid1)[:state]
+  end
+
   def test_message_state_is_propagated_to_thread_as_a_disjunction_in_search
     @store.set_query Query.new("body", "~unread")
     assert_equal 0, @store.count_results
