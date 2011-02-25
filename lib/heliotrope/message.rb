@@ -98,7 +98,7 @@ private
     else
       type = mime_type_for part
       filename = mime_filename_for part
-      content = mime_content_for part, preferred_type if type =~ /text\// # hack -- save a little time by never decoding attachments
+      content = mime_content_for part, preferred_type
       [[type, filename, content]]
     end
   end
