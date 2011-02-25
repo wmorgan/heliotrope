@@ -17,6 +17,8 @@ class Query
   attr_reader :whistlepig_q
   def clone; Query.new(nil, nil, @whistlepig_q.clone) end
   def and other; Query.new(nil, nil, @whistlepig_q.and(other)) end
-  def query; @whistlepig_q.query end
+
+  def original_query_s; @whistlepig_q.query end
+  def parsed_query_s; @whistlepig_q.to_s end
 end
 end

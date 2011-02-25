@@ -43,7 +43,7 @@ results = store.get_some_results PAGE_SIZE
 
 start_idx = 0
 while true
-  header = "== [#{num_results}] #{query.query.display_slice(0, (TOTAL_WIDTH - 20))} "
+  header = "== [#{num_results}] #{query.original_query_s.display_slice(0, (TOTAL_WIDTH - 20))} "
   header += "=" * [(TOTAL_WIDTH - header.display_width), 0].max
   puts header
 
@@ -106,7 +106,7 @@ EOS
       ## kinda hacky... downcase everything except ORs
       newquery = newquery.split(/\s+/).map { |x| x == "OR" ? x : x.downcase }.join(" ")
       newquery = Heliotrope::Query.new "body", newquery
-      puts "# parsed query is #{newquery.query}"
+      puts "# parsed query is #{newquery.parsed_query_s}"
 
       query = newquery
       store.set_query query
