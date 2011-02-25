@@ -21,6 +21,7 @@ end
 
 $store = Heliotrope::Store.new $opts.dir
 $mbox = File.open(File.join($opts.dir, "mbox"), "r:BINARY")
+$search_state = [] # hold on to the last search so that we can resume when possible
 
 class HeliotropeServer < Sinatra::Base
   set :host, $opts.host
@@ -31,109 +32,153 @@ class HeliotropeServer < Sinatra::Base
   end
 
   get "/" do
-    content_type :html
-    <<EOS
-<p>
-  Welcome to Heliotrope. This is the simplest possible HTML view of your email.
-  To get started, I suggest you start with #{link_to_search "~inbox", "your inbox"}.
-</p>
-EOS
+    redirect "/search?q=~inbox"
   end
+
+  class RequestError < StandardError; end
+
+  error RequestError do
+    e = request.env['sinatra.error']
+    "error: " + e.message
+  end
+
+  DEFAULT_SEARCH_PAGE_SIZE = 20
+  MAX_SEARCH_PAGE_SIZE = 300
 
   get "/search" do
     content_type :html
+
+    ## work around a rack (?) bug where quotes are omitted in queries like "hello bob"
+    query = if env["rack.request.query_string"] =~ /\bq=(.+?)(&|$)/
+      CGI.unescape $1
+    else
+      params["q"]
+    end
+
+    raise RequestError, "need a query" unless query
+    start = (params["start"] || 0).to_i
+    num = (params["num"] || DEFAULT_SEARCH_PAGE_SIZE).to_i
+    num = DEFAULT_SEARCH_PAGE_SIZE if num <= 0
+    num = [num, MAX_SEARCH_PAGE_SIZE].min
+
     begin
-      q = Heliotrope::Query.new "body", params["q"]
-      $store.set_query q
-      results = $store.get_some_results 10
-      header("Search: #{q.whistlepig_q}") + "<table>" + results.map { |r| threadinfo_to_html r }.join + "</table>" + footer
+      query = Heliotrope::Query.new "body", query
+      startt = Time.now
+      continued = false
+      results = if $search_state == [query.parsed_query_s, start]
+        continued = true
+        $store.get_some_results num
+      else
+        $store.set_query query
+        $store.get_some_results(start + num)[start, num]
+      end
+      elapsed = Time.now - startt
+
+      $search_state = [query.parsed_query_s, start + num]
+
+      nav = %{<div style="padding-top: 1em">}
+      if start > 0
+        nav += link_to_search(query.original_query_s, "<< top", 0, num) + "|" + link_to_search(query.original_query_s, "<< previous", [start - num, 0].max, num)
+      end
+      if (start > 0) && (results.size == num)
+        nav += "|"
+      end
+      if results.size == num
+        nav += link_to_search(query.original_query_s, "next >>", start + num, num)
+      end
+      nav += "</div>"
+
+      header("Search: #{query.original_query_s}", query.original_query_s) +
+        "<div>Parsed query: #{escape_html query.parsed_query_s}</div>" +
+        "<div>Search took #{sprintf '%.2f', elapsed}s and #{continued ? 'was' : 'was NOT'} continued</div>" +
+        "#{nav}<table>" +
+        results.map { |r| threadinfo_to_html r }.join +
+        "</table>#{nav}" + footer
+
     rescue Heliotrope::Query::ParseError => e
-      error(500) { "can't parse query: #{e.message}" }
+      raise RequestError, "can't parse query: #{e.message}"
     end
   end
 
   get "/thread/:thread_id" do |thread_id|
     content_type :html
     thread_id = thread_id.to_i
-    messageinfos = $store.load_thread_messageinfos thread_id
-    if messageinfos
-      first = messageinfos.first.first
-      header("Thread: " + first[:subject]) +
-        messageinfos.map do |mi, level|
-          %{<div style="padding-left: #{level}em">} +
-            messageinfo_to_html(mi) +
-            "</div>"
-        end.join +
-        footer
-    else
-      error(404) { "can't find thread #{thread_id.inspect}" }
-    end
+    messageinfos = $store.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+    first = messageinfos.find { |mi, level| mi[:subject] }[0]
+
+    header("Thread: " + first[:subject]) +
+      messageinfos.map do |mi, level|
+        %{<div style="padding-left: #{level}em">} +
+          messageinfo_to_html(mi) +
+          "</div>"
+      end.join +
+      footer
   end
 
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
-    message = $store.load_messageinfo message_id
+    message = $store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
-    if message
-      begin
-        header(message[:subject]) + message_to_html(message) + footer
-      rescue Heliotrope::InvalidMessageError => e
-        error(500) { "can't parse message #{message_id.inspect}: #{e.message}" }
-      end
-    else
-      error(404) { "can't find message #{message_id.inspect}" }
+    begin
+      threadinfo = $store.load_threadinfo(message[:thread_id])
+      docids = threadinfo[:structure].flatten
+      idx = docids.index(message_id) + 1
+      idx += 1 while(docids[idx] && (docids[idx] < 0))
+      header(message[:subject]) + message_to_html(message, docids[idx]) + footer
+    rescue Heliotrope::InvalidMessageError => e
+      raise RequestError, "can't parse message #{message_id.inspect}: #{e.message}"
     end
   end
 
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
     message_id = message_id.to_i
     part_id = part_id.to_i
-    message = $store.load_messageinfo message_id
+    message = $store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
-    if message
-      begin
-        rawbody = Heliotrope::MboxSplitter.new($mbox).message_at message[:offset]
-        m = Heliotrope::Message.new(rawbody).parse!
-        parts = m.mime_parts "text/html"
-        if part_id >= 0 && part_id <= parts.size
-          type, fn, content = parts[part_id]
-          if type =~ /^(\S+?);/
-            type = $1
-          end
-          content_type type
-          response['Content-Disposition'] = (type =~ /^text\// ? "inline" : "attachment")
-          response['Content-Disposition'] << %{; filename="#{fn}"} if fn
-          content
-        else
-          error(404) { "can't find that part" }
-        end
-      rescue Heliotrope::InvalidMessageError => e
-        error(500) { "can't parse message #{message_id.inspect}: #{e.message}" }
+    begin
+      rawbody = Heliotrope::MboxSplitter.new($mbox).message_at message[:offset]
+      m = Heliotrope::Message.new(rawbody).parse!
+      parts = m.mime_parts "text/html"
+
+      raise RequestError, "can't find that part" unless part_id >= 0 && part_id <= parts.size
+      type, fn, content = parts[part_id]
+      if type =~ /^(\S+?);/
+        type = $1
       end
-    else
-      error(404) { "can't find message #{message_id.inspect}" }
+      content_type type
+      response['Content-Disposition'] = (type =~ /^(text|image)\// ? "inline" : "attachment")
+      response['Content-Disposition'] << %{; filename="#{fn}"} if fn
+      content
+    rescue Heliotrope::InvalidMessageError => e
+      raise RequestError, "can't parse message #{message_id.inspect}: #{e.message}"
     end
   end
 
 private
 
-  def message_to_html message
+  def message_to_html message, next_messageid
     rawbody = Heliotrope::MboxSplitter.new($mbox).message_at message[:offset]
     m = Heliotrope::Message.new(rawbody).parse!
 
-    s = ""
-    s += "<div>From: #{link_to_search m.from.email, m.from}</div>"
+    s = "<div>#{link_to_threadview message[:thread_id], "<< back to thread"}"
+    s += " | #{link_to_messageview next_messageid, "next message in thread >>"}" if next_messageid
+    s += "</div>"
+    s += %{<div style="padding-top: 1em">From: #{link_to_search m.from.email, m.from}</div>}
     s += "<div>To: #{m.to.map { |p| link_to_search p.email, p }.join(", ")}</div>"
     s += "<div>Cc: #{m.cc.map { |p| link_to_search p.email, p }.join(", ")}</div>" unless m.cc.empty?
     s += "<div>Bcc: #{m.bcc.map { |p| link_to_search p.email, p }.join(", ")}</div>" unless m.bcc.empty?
     s += "<div>Date: #{Time.at m.date}</div>"
     s += "<div>Subject: #{escape_html m.subject}</div>"
     m.mime_parts("text/html").each_with_index do |(type, fn, content), i|
-      s += "<div>" + if fn
-        link_to_rawpart message[:message_id], i, "[attachment: #{fn} (#{type})]"
+      s += %{<div style="padding-top: 1em">}
+      if fn
+        s += link_to_attachment message[:message_id], i, "[attachment: #{fn} (#{type})]"
+        if type =~ /^image\// # show a preview
+          s += inline_image(message[:message_id], i)
+        end
       else
-        make_html type, content
+        s += make_html type, content
       end
     end
 
@@ -210,8 +255,8 @@ private
     end
   end
 
-  def link_to_search query, text
-    %{<a href="/search?q=#{CGI.escape query}">#{escape_html text}</a>}
+  def link_to_search query, text, start=0, num=DEFAULT_SEARCH_PAGE_SIZE
+    %{<a href="/search?q=#{CGI.escape query}&start=#{start}&num=#{num}">#{escape_html text}</a>}
   end
 
   def link_to_threadview thread_id, text
@@ -222,15 +267,25 @@ private
     %{<a href="/message/#{message_id}">#{escape_html text}</a>}
   end
 
-  def link_to_rawpart message_id, part_id, text
+  def link_to_attachment message_id, part_id, text
     %{<a href="/message/#{message_id}/part/#{part_id}">#{escape_html text}</a>}
   end
 
-  def header title
+  def inline_image message_id, part_id
+    %{<img src="/message/#{message_id}/part/#{part_id}">}
+  end
+
+  def header title, query=""
     title = escape_html title
     <<-EOS
 <!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Heliotrope: #{title}</title>
 <meta name="application-name" content="heliotrope"></head><body><h1>#{title}</h1>
+<div>
+<form method="get" action="/search">
+  #{link_to_search "~inbox", "[inbox]"}
+  Search: <input name="q" size=50 value="#{escape_html query}"/>
+  <input type="submit" value="go"/>
+  </form></div>
     EOS
   end
 
