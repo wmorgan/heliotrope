@@ -43,7 +43,7 @@ begin
           if store.contains_msgid? message.msgid
             num_seen += 1
           else
-            doc_id = store.add_message message, offset, %w(unread), %w(inbox)
+            doc_id = store.add_message message, %w(unread), %w(inbox), :offset => offset, :size => rawbody.size
             #puts "[#{doc_id}, #{offset}]"
             num_indexed += 1
           end

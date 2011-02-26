@@ -8,7 +8,10 @@ class Person
 
   attr_reader :name, :email, :handle
 
-  def to_s; [name, "<#{email}>"].compact.join(" ") end
+  def to_s
+    qname = name =~ /"/ ? name.inspect : name
+    [qname, "<#{email}>"].compact.join(" ")
+  end
 
   def display_name; name || handle || email end
 
@@ -19,8 +22,10 @@ class Person
     return if string.nil? || string.empty?
 
     name, email, handle = case string
-    when /(["'])(.+?)\1\s*<((\S+?)@\S+?)>/
-      [$2, $3, $4]
+    when /^(["'])(.*?[^\\])\1\s*<((\S+?)@\S+?)>/
+      a, b, c = $2, $3, $4
+      a = a.gsub(/\\(["'])/, '\1')
+      [a, b, c]
     when /(.+?)\s*<((\S+?)@\S+?)>/
       [$1, $2, $3]
     when /<((\S+?)@\S+?)>/
