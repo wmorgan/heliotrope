@@ -1,3 +1,26 @@
 Heliotrope is a personal, threaded, search-centric email server.
 
 It is a work in progress.
+
+Trying it out:
+
+1. Install your distro's TokyoTyrant or TokyoCabinet libraries. On Ubuntu, it's
+   `sudo apt-get install libtokyocabinet8`.
+2. `gem install trollop whistlepig console rest-client sinatra rubymail oklahoma_mixer`
+3. ruby -Ilib bin/heliotrope-server &
+4. ruby -Ilib bin/heliotrope-add -h
+
+Use heliotrope-add to add some email. It is slow, but it works.
+
+DEBUGGING / EXPERIMENTAL HTML INTERFACE
+---------------------------------------
+
+Point your browser to http://localhost:8042. This HTML interface is for
+debugging, experimental, and development purposes.  It is not pretty, but it is
+functional, and should give you an idea of what types of responses the server
+can provide.
+
+JSON INTERFACE FOR CLIENTS
+--------------------------
+
+Coming soon!
