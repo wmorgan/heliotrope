@@ -79,7 +79,7 @@ class HeliotropeServer < Sinatra::Base
       CGI.unescape $1
     else
       params["q"]
-    end
+    end.downcase
 
     raise RequestError, "need a query" unless query
     start = (params["start"] || 0).to_i
