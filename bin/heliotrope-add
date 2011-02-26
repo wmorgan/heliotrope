@@ -1,0 +1,120 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'trollop'
+require 'rest_client'
+require "heliotrope"
+require 'json'
+
+opts = Trollop::options do
+  banner <<EOS
+Adds an email or a set of emails to a Heliotrope server. By default, takes a
+single message on stdin. Can also submit all the messages in an mbox file, a
+maildir, or an IMAP folder.
+
+Note that Heliotrope only serves threads in order of the submission time of
+their messages. If you are using this tool to backfill from an existing store,
+pay attention to the order of messaes.
+
+Usage: #{$0} [options]
+
+Where options include:
+EOS
+  opt :host, "Heliotrope server host", :default => "localhost", :short => "H"
+  opt :port, "Heliotrope server port", :default => 8042
+  opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
+
+  banner <<EOS
+
+Options for reading from an mbox file:
+EOS
+  opt :mbox_fn, "mbox filename", :type => String, :short => "m"
+  opt :mbox_start_offset, "Start file offset for scanning", :default => 0, :short => "s"
+  banner <<EOS
+
+Options for reading from a maildir directory:
+EOS
+  opt :maildir_dir, "maildir directory", :type => String
+  banner <<EOS
+
+Options for reading from an IMAP account:
+EOS
+  opt :imap_host, "IMAP server hostname", :type => String
+  opt :imap_port, "IMAP server port (default: 993 with ssl, 143 without)"
+  opt :dont_use_ssl, "Don't use SSL"
+  opt :imap_username, "IMAP username (default: prompt)", :type => String
+  opt :imap_password, "IMAP password (default: prompt)", :type => String
+  opt :imap_folder, "IMAP folder", :default => "inbox"
+
+  banner <<EOS
+
+If none of the mbox, maildir or IMAP options are given, will read a single
+message from stdin.
+EOS
+
+  conflicts :mbox_fn, :maildir_dir, :imap_host
+end
+
+if opts.mbox_fn || opts.maildir_dir || opts.imap_host
+  Trollop::die "unknown option #{ARGV.first}" unless ARGV.empty?
+end
+
+source = if opts.mbox_fn
+  Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.start_offset
+elsif opts.maildir_dir
+  Heliotrope::MaildirWalker.new opts.maildir_dir
+elsif opts.imap_host
+  username = opts.imap_username || begin
+    print "IMAP username: "
+    $stdout.flush
+    gets or abort
+  end.chomp
+
+  password = opts.imap_password || begin
+    print "IMAP password (displayed!): "
+    $stdout.flush
+    gets or abort
+  end.chomp
+
+  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password
+else
+  Heliotrope::MBoxStream.new $stdin
+end
+
+server_url = "http://#{opts.host}:#{opts.port}/message"
+num_scanned = num_indexed = num_bad = num_seen = 0
+startt = lastt = Time.now
+
+begin
+  until source.done?
+    rawbody = source.next_message
+    break if opts.num_messages && num_scanned >= opts.num_messages
+    rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
+    num_scanned += 1
+
+    response = RestClient.post server_url, :message => rawbody
+    response = JSON.parse(response)
+
+    if response["response"] == "ok"
+      if response["status"] == "seen"
+        num_seen += 1
+      else
+        num_indexed += 1
+      end
+    else
+      num_bad += 1
+      #puts "Error for message at offset #{offset}: " + response["error_message"]
+    end
+
+    if !source.done? && ((Time.now - lastt) > 5)
+      elapsed = Time.now - startt
+      printf "scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
+      lastt = Time.now
+    end
+  end
+ensure
+  source.finish!
+end
+
+elapsed = Time.now - startt
+printf "scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
