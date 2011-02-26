@@ -56,9 +56,7 @@ class Store
     @index_time = @store_time = @thread_time = 0
   end
 
-  def add_message message, offset=0, state=[], labels=[]
-    raise ArgumentError, "invalid offset #{offset.inspect}" unless offset && offset >= 0
-
+  def add_message message, state=[], labels=[], extra={}
     key = "docid/#{message.msgid}"
     if contains_key? key
       docid = load_int key
@@ -76,7 +74,7 @@ class Store
     docid = index! message
 
     ## add message to store
-    messageinfo = write_messageinfo! message, offset, state, docid
+    messageinfo = write_messageinfo! message, state, docid, extra
 
     ## build thread structure, collecting any labels from threads that have
     ## been joined by adding this message.
@@ -408,7 +406,7 @@ private
     @index.add_entry entry
   end
 
-  def write_messageinfo! message, offset, state, docid
+  def write_messageinfo! message, state, docid, extra
     ## write it to the store
     startt = Time.now
     messageinfo = {
@@ -417,8 +415,7 @@ private
       :from => message.from.to_s,
       :to => message.recipients.map { |x| x.to_s },
       :has_attachment => message.has_attachment?,
-      :offset => offset,
-    }
+    }.merge extra
 
     ## add it to the store
     write_hash "doc/#{docid}", messageinfo

@@ -85,7 +85,7 @@ class HeliotropeTest < ::Test::Unit::TestCase
 
   def test_added_message_state_is_preserved
     m1 = MockMessage.new
-    docid, threadid = @store.add_message m1, 0, %w(unread), []
+    docid, threadid = @store.add_message m1, %w(unread), []
 
     summary = @store.load_messageinfo docid
     assert_equal Set.new(%w(unread)), summary[:state]
@@ -96,14 +96,14 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_equal 0, @store.count_results
 
     m1 = MockMessage.new
-    docid, threadid = @store.add_message m1, 0, %w(unread), []
+    docid, threadid = @store.add_message m1, %w(unread), []
 
     assert_equal 1, @store.count_results
   end
 
   def test_message_state_is_modifiable
     m1 = MockMessage.new
-    docid, threadid = @store.add_message m1, 0, %w(), []
+    docid, threadid = @store.add_message m1
     assert_equal Set.new, @store.load_messageinfo(docid)[:state]
 
     @store.update_message_state docid, %w(unread)
@@ -118,13 +118,13 @@ class HeliotropeTest < ::Test::Unit::TestCase
 
   def test_message_state_ignores_random_stuff
     m1 = MockMessage.new
-    docid, threadid = @store.add_message m1, 0, %w(hello there bob inbox unread is nice), []
+    docid, threadid = @store.add_message m1, %w(hello there bob inbox unread is nice), []
     assert_equal Set.new(%w(unread)), @store.load_messageinfo(docid)[:state]
   end
 
   def test_added_thread_labels_are_applied_to_the_whole_thread
     m1 = MockMessage.new
-    docid, threadid = @store.add_message m1, 0, [], %w(tired hungry)
+    docid, threadid = @store.add_message m1, [], %w(tired hungry)
 
     summary = @store.load_threadinfo threadid
     assert_equal Set.new(%w(tired hungry)), summary[:labels]
@@ -150,7 +150,7 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_equal 0, results.size
 
     m1 = MockMessage.new :indexable_text => "hello bob"
-    docid, threadid = @store.add_message m1, 0, [], %w(tired hungry)
+    docid, threadid = @store.add_message m1, [], %w(tired hungry)
 
     @store.reset_query!
     results = @store.get_some_results 100
@@ -197,9 +197,9 @@ class HeliotropeTest < ::Test::Unit::TestCase
     m2 = MockMessage.new :msgid => "2", :refs => ["1"]
     m3 = MockMessage.new :msgid => "3", :refs => ["2"]
 
-    docid1, threadid1 = @store.add_message m1, 0, %w(unread), []
-    docid2, threadid2 = @store.add_message m2, 0, %w(unread), []
-    docid3, threadid3 = @store.add_message m3, 0, %w(unread), []
+    docid1, threadid1 = @store.add_message m1, %w(unread)
+    docid2, threadid2 = @store.add_message m2, %w(unread)
+    docid3, threadid3 = @store.add_message m3, %w(unread)
 
     assert_equal threadid1, threadid2
     assert_equal threadid2, threadid3
@@ -226,9 +226,9 @@ class HeliotropeTest < ::Test::Unit::TestCase
     m2 = MockMessage.new :msgid => "2", :refs => ["1"]
     m3 = MockMessage.new :msgid => "3", :refs => ["2"]
 
-    docid1, threadid1 = @store.add_message m1, 0, [], []
-    docid2, threadid2 = @store.add_message m2, 0, [], []
-    docid3, threadid3 = @store.add_message m3, 0, [], []
+    docid1, threadid1 = @store.add_message m1
+    docid2, threadid2 = @store.add_message m2
+    docid3, threadid3 = @store.add_message m3
 
     assert_equal threadid1, threadid2
     assert_equal threadid2, threadid3
@@ -244,9 +244,9 @@ class HeliotropeTest < ::Test::Unit::TestCase
     m2 = MockMessage.new :msgid => "2", :refs => ["1"]
     m3 = MockMessage.new :msgid => "3", :refs => ["2"]
 
-    docid1, threadid1 = @store.add_message m1, 0, %w(unread), []
-    docid2, threadid2 = @store.add_message m2, 0, %w(unread), []
-    docid3, threadid3 = @store.add_message m3, 0, %w(unread), []
+    docid1, threadid1 = @store.add_message m1, %w(unread)
+    docid2, threadid2 = @store.add_message m2, %w(unread)
+    docid3, threadid3 = @store.add_message m3, %w(unread)
 
     assert_equal threadid1, threadid2
     assert_equal threadid2, threadid3
@@ -297,7 +297,7 @@ class HeliotropeTest < ::Test::Unit::TestCase
     @store.set_query Query.new("body", "~hungry")
     assert_equal 0, @store.count_results
 
-    docid3, threadid3 = @store.add_message m3, 0, [], %w(hungry)
+    docid3, threadid3 = @store.add_message m3, [], %w(hungry)
     assert_equal 1, @store.count_results
 
     results = @store.get_some_results 100
@@ -312,10 +312,10 @@ class HeliotropeTest < ::Test::Unit::TestCase
     m1 = MockMessage.new :msgid => "1"
     m3 = MockMessage.new :msgid => "3", :refs => ["2"]
 
-    docid1, threadid1 = @store.add_message m1, 0, [], %w(fluffy)
+    docid1, threadid1 = @store.add_message m1, [], %w(fluffy)
     assert_equal Set.new(%w(fluffy)), @store.load_threadinfo(threadid1)[:labels]
 
-    docid3, threadid3 = @store.add_message m3, 0, [], %w(bunny)
+    docid3, threadid3 = @store.add_message m3, [], %w(bunny)
     assert_equal Set.new(%w(bunny)), @store.load_threadinfo(threadid3)[:labels]
 
     m2 = MockMessage.new :msgid => "2", :refs => ["1"]
@@ -332,8 +332,8 @@ class HeliotropeTest < ::Test::Unit::TestCase
     m1 = MockMessage.new :msgid => "1"
     m3 = MockMessage.new :msgid => "3", :refs => ["2"]
 
-    docid1, threadid1 = @store.add_message m1, 0, [], %w(fluffy)
-    docid3, threadid3 = @store.add_message m3, 0, [], %w(bunny)
+    docid1, threadid1 = @store.add_message m1, [], %w(fluffy)
+    docid3, threadid3 = @store.add_message m3, [], %w(bunny)
 
     @store.set_query Query.new("body", "~fluffy")
     results = @store.get_some_results 100
