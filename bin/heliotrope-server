@@ -20,7 +20,7 @@ EOS
 end
 
 $store = Heliotrope::Store.new $opts.dir
-$mbox = File.open(File.join($opts.dir, "mbox"), "r:BINARY")
+$mbox = File.open(File.join($opts.dir, "mbox"), "a+:BINARY")
 $search_state = [] # hold on to the last search so that we can resume when possible
 
 class HeliotropeServer < Sinatra::Base
@@ -44,6 +44,32 @@ class HeliotropeServer < Sinatra::Base
 
   DEFAULT_SEARCH_PAGE_SIZE = 20
   MAX_SEARCH_PAGE_SIZE = 300
+
+  post "/message" do
+    content_type :json
+
+    begin
+      rawbody = params["message"] or raise RequestError, "need a message"
+      rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
+
+      message = Heliotrope::Message.new(rawbody).parse!
+
+      if $store.contains_msgid? message.msgid
+        puts "; already seen #{message.msgid}"
+        { :response => :ok, :status => :seen }
+      else
+        $mbox.seek 0, IO::SEEK_END
+        $mbox.puts "From heliotrope@masanjin.net #{Time.now.localtime}" # just to make it an mbox
+        offset = $mbox.tell
+        $mbox.print rawbody
+        $mbox.flush
+        doc_id, thread_id = $store.add_message message, %w(unread), %w(inbox), :offset => offset, :size => rawbody.size
+        { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
+      end
+    rescue Heliotrope::InvalidMessageError => e
+      { :response => :error, :error_message => e.message }
+    end.to_json
+  end
 
   get "/search" do
     content_type :html
@@ -137,7 +163,8 @@ class HeliotropeServer < Sinatra::Base
     message = $store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
-      rawbody = Heliotrope::MboxSplitter.new($mbox).message_at message[:offset]
+      $mbox.seek message[:offset]
+      rawbody = $mbox.read message[:size]
       m = Heliotrope::Message.new(rawbody).parse!
       parts = m.mime_parts "text/html"
 
@@ -158,7 +185,8 @@ class HeliotropeServer < Sinatra::Base
 private
 
   def message_to_html message, next_messageid
-    rawbody = Heliotrope::MboxSplitter.new($mbox).message_at message[:offset]
+    $mbox.seek message[:offset]
+    rawbody = $mbox.read message[:size]
     m = Heliotrope::Message.new(rawbody).parse!
 
     s = "<div>#{link_to_threadview message[:thread_id], "<< back to thread"}"

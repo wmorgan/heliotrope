@@ -206,7 +206,11 @@ EOS
 
         message, level = messageinfos[midx]
 
-        rawbody = File.open(mbox_fn, "r:BINARY") { |f| Heliotrope::MboxSplitter.new(f).message_at message[:offset] }
+        rawbody = File.open(mbox_fn, "r:BINARY") do |f|
+          f.seek message[:offset]
+          f.read message[:size]
+        end
+
         m = Heliotrope::Message.new(rawbody).parse!
         puts "From: #{m.from}"
         puts "To: #{m.to.join(", ")}"
