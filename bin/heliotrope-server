@@ -248,7 +248,9 @@ private
     flags = escape_html(
       (thread[:state].include?("starred") ? "*" : " ") +
       (thread[:state].include?("unread") ? "N" : " ") +
-      (thread[:state].include?("attachment") ? "@" : " ")
+      (thread[:state].include?("attachment") ? "@" : " ") +
+      (thread[:state].include?("signed") ? "S" : " ") +
+      (thread[:state].include?("encrypted") ? "E" : " ")
     )
 
     <<-EOS
@@ -270,7 +272,9 @@ private
       flags =
         (message[:state].include?("starred") ? "*" : " ") +
         (message[:state].include?("unread") ? "N" : " ") +
-        (message[:state].include?("attachment") ? "@" : " ")
+        (message[:state].include?("attachment") ? "@" : " ") +
+        (message[:state].include?("signed") ? "S" : " ") +
+        (message[:state].include?("encrypted") ? "E" : " ")
       date = escape_html Time.at(message[:date]).strftime("%Y/%m/%d %H:%M")
       subject = link_to_messageview message[:message_id], message[:subject]
 

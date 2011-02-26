@@ -67,9 +67,24 @@ class Message
     end
   end
 
-  def has_attachment?; @has_attachment ||= mime_parts("text/plain").any? { |type, fn, content| fn } end
-  def signed?; @signed ||= mime_parts("text/plain").any? { |type, fn, content| type =~ /protocol="application\/pgp-signature/ } end
-  def encrypted?; @encrypted ||= mime_parts("text/plain").any? { |type, fn, content| type =~ /protocol="application\/pgp-encrypted/ } end
+  SIGNED_MIME_TYPE = %r{multipart/signed;.*protocol="?application/pgp-signature"?}m
+  ENCRYPTED_MIME_TYPE = %r{multipart/encrypted;.*protocol="?application/pgp-encrypted"?}m
+  SIGNATURE_ATTACHMENT_TYPE = %r{application\/pgp-signature\b}
+
+  def has_attachment?
+    @has_attachment ||=
+      mime_parts("text/plain").any? do |type, fn, content|
+        fn && (type !~ SIGNATURE_ATTACHMENT_TYPE)
+    end
+  end
+
+  def signed?
+    @signed ||= mime_part_types.any? { |t| t =~ SIGNED_MIME_TYPE }
+  end
+
+  def encrypted?
+    @encrypted ||= mime_part_types.any? { |t| t =~ ENCRYPTED_MIME_TYPE }
+  end
 
   def mime_parts preferred_type
     @mime_parts[preferred_type] ||= decode_mime_parts @m, preferred_type
@@ -80,6 +95,11 @@ private
   ## hash the fuck out of all message ids. trust me, you want this.
   def munge_msgids msgids
     msgids.scan(/<(.+?)>/).map { |x| Digest::MD5.hexdigest(x.first) }
+  end
+
+  def mime_part_types part=@m
+    ptype = part.header["content-type"] || ""
+    [ptype] + (part.multipart? ? part.body.map { |sub| mime_part_types sub } : [])
   end
 
   ## unnests all the mime stuff and returns a list of [type, filename, content]
