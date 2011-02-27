@@ -22,6 +22,7 @@ Where options include:
 EOS
   opt :host, "Heliotrope server host", :default => "localhost", :short => "H"
   opt :port, "Heliotrope server port", :default => 8042
+  opt :dir, "Don't use the server. Instead, write directly to the store directory.", :type => String
   opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
 
   banner <<EOS
@@ -81,6 +82,12 @@ else
   Heliotrope::MBoxStream.new $stdin
 end
 
+index = store = nil
+if opts.dir
+  index = Heliotrope::Index.new opts.dir
+  store = Heliotrope::Store.new File.join(opts.dir, "messages")
+end
+
 server_url = "http://#{opts.host}:#{opts.port}/message"
 num_scanned = num_indexed = num_bad = num_seen = 0
 startt = lastt = Time.now
@@ -92,18 +99,33 @@ begin
     rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
     num_scanned += 1
 
-    response = RestClient.post server_url, :message => rawbody
-    response = JSON.parse(response)
-
-    if response["response"] == "ok"
-      if response["status"] == "seen"
-        num_seen += 1
-      else
-        num_indexed += 1
+    if opts.dir
+     begin
+       message = Heliotrope::Message.new(rawbody).parse!
+       if index.contains_msgid? message.msgid
+          num_seen += 1
+        else
+          loc = store.add rawbody
+          index.add_message message, %w(unread), %w(inbox), :loc => loc
+          num_indexed += 1
+        end
+      rescue Heliotrope::InvalidMessageError => e
+        num_bad += 1
       end
     else
-      num_bad += 1
-      #puts "Error for message at offset #{offset}: " + response["error_message"]
+      response = RestClient.post server_url, :message => rawbody
+      response = JSON.parse(response)
+
+      if response["response"] == "ok"
+        if response["status"] == "seen"
+          num_seen += 1
+        else
+          num_indexed += 1
+        end
+      else
+        num_bad += 1
+        #puts "Error for message at offset #{offset}: " + response["error_message"]
+      end
     end
 
     if !source.done? && ((Time.now - lastt) > 5)
