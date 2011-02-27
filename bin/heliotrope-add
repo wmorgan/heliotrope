@@ -61,7 +61,7 @@ if opts.mbox_fn || opts.maildir_dirs || opts.imap_host
 end
 
 source = if opts.mbox_fn
-  Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.start_offset
+  Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.mbox_start_offset
 elsif opts.maildir_dirs
   Heliotrope::MaildirWalker.new(*opts.maildir_dirs)
 elsif opts.imap_host
