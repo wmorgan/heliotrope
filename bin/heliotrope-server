@@ -7,14 +7,12 @@ require 'sinatra/base'
 require 'whistlepig'
 require "heliotrope"
 require 'cgi'
-require 'stringio'
-require 'zlib'
 require 'rack'
 
 class HeliotropeServer < Sinatra::Base
-  def initialize index, messages
+  def initialize index, store
     @index = index
-    @messages = messages
+    @store = store
     @search_state = []
     super()
   end
@@ -49,18 +47,8 @@ class HeliotropeServer < Sinatra::Base
       if @index.contains_msgid? message.msgid
         { :response => :ok, :status => :seen }
       else
-        buf = StringIO.new
-        zbuf = Zlib::GzipWriter.new buf
-        zbuf.write rawbody
-        zbuf.close
-
-        @messages.seek 0, IO::SEEK_END
-        offset = @messages.tell
-        @messages.write buf.string
-        @messages.flush
-
-        doc_id, thread_id = @index.add_message message, %w(unread), %w(inbox), :offset => offset, :size => buf.string.bytesize
-        #printf "; compressed doc %d %dk => %dk (%.0f%% compression rate) and wrote at offset %d\n", doc_id, rawbody.bytesize / 1024, buf.string.bytesize / 1024, 100.0 - (100.0 * buf.string.bytesize / rawbody.bytesize), offset
+        loc = @store.add rawbody
+        doc_id, thread_id = @index.add_message message, %w(unread), %w(inbox), :loc => loc
         { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
       end
     rescue Heliotrope::InvalidMessageError => e
@@ -160,7 +148,7 @@ class HeliotropeServer < Sinatra::Base
     message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
-      m = load_actual_message message[:offset], message[:size]
+      m = load_actual_message message[:loc]
       parts = m.mime_parts "text/html"
 
       raise RequestError, "can't find that part" unless part_id >= 0 && part_id <= parts.size
@@ -179,17 +167,13 @@ class HeliotropeServer < Sinatra::Base
 
 private
 
-  def load_actual_message offset, size
-    @messages.seek offset
-    buf = StringIO.new @messages.read(size)
-    z = Zlib::GzipReader.new(buf)
-    rawbody = z.read
-    z.close
+  def load_actual_message offset
+    rawbody = @store.read offset
     Heliotrope::Message.new(rawbody).parse!
   end
 
   def message_to_html message, next_messageid
-    m = load_actual_message message[:offset], message[:size]
+    m = load_actual_message message[:loc]
 
     s = "<div>#{link_to_threadview message[:thread_id], "<< back to thread"}"
     s += " | #{link_to_messageview next_messageid, "next message in thread >>"}" if next_messageid
@@ -343,8 +327,8 @@ EOS
 end
 
 index = Heliotrope::Index.new opts.dir
-messages = File.open(File.join(opts.dir, "messages"), "a+:BINARY")
-server = HeliotropeServer.new index, messages
+store = Heliotrope::Store.new File.join(opts.dir, "messages")
+server = HeliotropeServer.new index, store
 
 app = if opts.mode == "development"
   Rack::Builder.new do
