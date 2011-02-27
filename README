@@ -1,6 +1,15 @@
-Heliotrope is a personal, threaded, search-centric email server.
+Heliotrope is a personal, search-centric, threaded email server. It provides a
+backend service against which email clients / MUAs can be written. It features:
 
-It is a work in progress.
+- email storage and retrieval, of course
+- full-text search over all messages
+- email threading
+- arbitrary labels
+- a sophisticated query language
+- built-in handling of signed and encrypted email
+- a fast, JSON-over-HTTP API
+
+Heliotrope is a work in progress. It is not stable. It is not tested.
 
 Trying it out:
 
@@ -10,7 +19,24 @@ Trying it out:
 3. ruby -Ilib bin/heliotrope-server &
 4. ruby -Ilib bin/heliotrope-add -h
 
-Use heliotrope-add to add some email. It is slow, but it works.
+Once the server is running, you can use heliotrope-add to add some email. It is
+slow, but it works.
+
+Add a single email:
+  cat email.txt | ruby -Ilib bin/heliotrope-add
+
+Add a pre-existing mbox:
+  ruby -Ilib bin/heliotrope-add -m <mbox>
+
+Add a pre-existing maildir:
+  ruby -Ilib bin/heliotrope-add -a <maildir>
+
+Add a pre-existing IMAP account:
+  ruby -Ilib bin/heliotrope-add -i <imap server>
+
+Once email has been added to Heliotrope, you can discard it. (Ok, maybe wait
+until Heliotrope is stable first.) Now point your browser to
+http://localhost:8042 for a simple demo of the API calls.
 
 DEBUGGING / EXPERIMENTAL HTML INTERFACE
 ---------------------------------------
@@ -20,7 +46,7 @@ debugging, experimental, and development purposes.  It is not pretty, but it is
 functional, and should give you an idea of what types of responses the server
 can provide.
 
-JSON INTERFACE FOR CLIENTS
---------------------------
+JSON API
+--------
 
 Coming soon!
