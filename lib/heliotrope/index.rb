@@ -21,7 +21,7 @@ class Array
 end
 
 module Heliotrope
-class Store
+class Index
   QUERY_FILTER = Whistlepig::Query.new "", "-~deleted" # always filter out deleted messages
 
   ## these are things that can be set on a per-message basis. each one

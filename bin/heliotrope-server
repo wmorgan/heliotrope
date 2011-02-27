@@ -12,8 +12,8 @@ require 'zlib'
 require 'rack'
 
 class HeliotropeServer < Sinatra::Base
-  def initialize store, messages
-    @store = store
+  def initialize index, messages
+    @index = index
     @messages = messages
     @search_state = []
     super()
@@ -46,7 +46,7 @@ class HeliotropeServer < Sinatra::Base
 
       message = Heliotrope::Message.new(rawbody).parse!
 
-      if @store.contains_msgid? message.msgid
+      if @index.contains_msgid? message.msgid
         { :response => :ok, :status => :seen }
       else
         buf = StringIO.new
@@ -59,7 +59,7 @@ class HeliotropeServer < Sinatra::Base
         @messages.write buf.string
         @messages.flush
 
-        doc_id, thread_id = @store.add_message message, %w(unread), %w(inbox), :offset => offset, :size => buf.string.bytesize
+        doc_id, thread_id = @index.add_message message, %w(unread), %w(inbox), :offset => offset, :size => buf.string.bytesize
         #printf "; compressed doc %d %dk => %dk (%.0f%% compression rate) and wrote at offset %d\n", doc_id, rawbody.bytesize / 1024, buf.string.bytesize / 1024, 100.0 - (100.0 * buf.string.bytesize / rawbody.bytesize), offset
         { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
       end
@@ -90,10 +90,10 @@ class HeliotropeServer < Sinatra::Base
       continued = false
       results = if $search_state == [query.parsed_query_s, start]
         continued = true
-        @store.get_some_results num
+        @index.get_some_results num
       else
-        @store.set_query query
-        @store.get_some_results(start + num)[start, num]
+        @index.set_query query
+        @index.get_some_results(start + num)[start, num]
       end
       elapsed = Time.now - startt
 
@@ -126,7 +126,7 @@ class HeliotropeServer < Sinatra::Base
   get "/thread/:thread_id" do |thread_id|
     content_type :html
     thread_id = thread_id.to_i
-    messageinfos = @store.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+    messageinfos = @index.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
     first = messageinfos.find { |mi, level| mi[:subject] }[0]
 
     header("Thread: " + first[:subject]) +
@@ -141,10 +141,10 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
-    message = @store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
-      threadinfo = @store.load_threadinfo(message[:thread_id])
+      threadinfo = @index.load_threadinfo(message[:thread_id])
       docids = threadinfo[:structure].flatten
       idx = docids.index(message_id) + 1
       idx += 1 while(docids[idx] && (docids[idx] < 0))
@@ -157,7 +157,7 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
     message_id = message_id.to_i
     part_id = part_id.to_i
-    message = @store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
       m = load_actual_message message[:offset], message[:size]
@@ -212,7 +212,7 @@ private
       end
     end
 
-    #store.update_message_state(message[:message_id], (message[:state] - ["unread"]))
+    #@index.update_message_state(message[:message_id], (message[:state] - ["unread"]))
     s
   end
 
@@ -239,7 +239,7 @@ private
       join(", ")
 
     size = thread[:size]
-    labels = (thread[:labels] - Heliotrope::Store::MESSAGE_STATE).map do |l|
+    labels = (thread[:labels] - Heliotrope::Index::MESSAGE_STATE).map do |l|
       link_to_search "~#{l}", "+#{l}"
     end.join(" ")
 
@@ -342,9 +342,9 @@ EOS
   opt :mode, "Runtime mode", :default => "development"
 end
 
-store = Heliotrope::Store.new opts.dir
+index = Heliotrope::Index.new opts.dir
 messages = File.open(File.join(opts.dir, "messages"), "a+:BINARY")
-server = HeliotropeServer.new store, messages
+server = HeliotropeServer.new index, messages
 
 app = if opts.mode == "development"
   Rack::Builder.new do

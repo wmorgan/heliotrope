@@ -30,16 +30,16 @@ mbox_fn = ARGV.shift or Trollop::die "need a filename"
 ARGV.empty? or Trollop::die "need exactly one filename"
 
 Console.init_locale!
-store = Heliotrope::Store.new opts.dir
-#store.debug = true
+index = Heliotrope::Index.new opts.dir
+#index.debug = true
 
 query = Heliotrope::Query.new "body", "~inbox"
 
-store.set_query query
+index.set_query query
 puts "; counting results..."
-num_results = store.count_results
+num_results = index.count_results
 puts "; got #{num_results} results"
-results = store.get_some_results PAGE_SIZE
+results = index.get_some_results PAGE_SIZE
 
 start_idx = 0
 while true
@@ -92,11 +92,11 @@ Example queries:
 EOS
   when "", "cont", "continue"
     start_idx += results.size unless results.size < PAGE_SIZE
-    results = store.get_some_results PAGE_SIZE
+    results = index.get_some_results PAGE_SIZE
   when "top"
     start_idx = 0
-    store.set_query query
-    results = store.get_some_results PAGE_SIZE
+    index.set_query query
+    results = index.get_some_results PAGE_SIZE
   when "q", nil
     puts
     break
@@ -109,11 +109,11 @@ EOS
       puts "# parsed query is #{newquery.parsed_query_s}"
 
       query = newquery
-      store.set_query query
+      index.set_query query
       puts "; counting results..."
-      num_results = store.count_results
+      num_results = index.count_results
       puts "; got #{num_results} results"
-      results = store.get_some_results PAGE_SIZE
+      results = index.get_some_results PAGE_SIZE
 
       start_idx = 0
     rescue Heliotrope::Query::ParseError => e
@@ -138,7 +138,7 @@ EOS
     end
 
     thread_id = results[tidx][:thread_id]
-    new_labels = store.update_thread_labels thread_id, new_labels
+    new_labels = index.update_thread_labels thread_id, new_labels
     results[tidx][:labels] = new_labels if new_labels
   when /^(\d+)$/
     tidx = $1.to_i - start_idx
@@ -149,7 +149,7 @@ EOS
     end
 
     thread_id = results[tidx][:thread_id]
-    messageinfos = store.load_thread_messageinfos thread_id
+    messageinfos = index.load_thread_messageinfos thread_id
     mid = -1
 
     while true
@@ -227,7 +227,7 @@ EOS
         end
         puts
 
-        new_mstate, new_tstate, new_tlabels = store.update_message_state(message[:message_id], (message[:state] - ["unread"]))
+        new_mstate, new_tstate, new_tlabels = index.update_message_state(message[:message_id], (message[:state] - ["unread"]))
         messageinfos[midx][0][:state] = new_mstate if new_mstate
         results[tidx][:state] = new_tstate if new_tstate
         results[tidx][:labels] = new_tlabels if new_tlabels
