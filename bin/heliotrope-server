@@ -9,25 +9,15 @@ require "heliotrope"
 require 'cgi'
 require 'stringio'
 require 'zlib'
-
-$opts = Trollop::options do
-  banner <<EOS
-Usage: #{$0} [options]
-
-Where options include:
-EOS
-  opt :host, "Host interface to listen on", :default => "0.0.0.0", :short => "-H"
-  opt :port, "Port to listen on", :default => 8042
-  opt :dir, "Base directory for all index files", :default => "."
-end
-
-$store = Heliotrope::Store.new $opts.dir
-$messages = File.open(File.join($opts.dir, "messages"), "a+:BINARY")
-$search_state = [] # hold on to the last search so that we can resume when possible
+require 'rack'
 
 class HeliotropeServer < Sinatra::Base
-  set :host, $opts.host
-  set :port, $opts.port
+  def initialize store, messages
+    @store = store
+    @messages = messages
+    @search_state = []
+    super()
+  end
 
   helpers do
     include Rack::Utils
@@ -56,7 +46,7 @@ class HeliotropeServer < Sinatra::Base
 
       message = Heliotrope::Message.new(rawbody).parse!
 
-      if $store.contains_msgid? message.msgid
+      if @store.contains_msgid? message.msgid
         { :response => :ok, :status => :seen }
       else
         buf = StringIO.new
@@ -64,12 +54,12 @@ class HeliotropeServer < Sinatra::Base
         zbuf.write rawbody
         zbuf.close
 
-        $messages.seek 0, IO::SEEK_END
-        offset = $messages.tell
-        $messages.write buf.string
-        $messages.flush
+        @messages.seek 0, IO::SEEK_END
+        offset = @messages.tell
+        @messages.write buf.string
+        @messages.flush
 
-        doc_id, thread_id = $store.add_message message, %w(unread), %w(inbox), :offset => offset, :size => buf.string.bytesize
+        doc_id, thread_id = @store.add_message message, %w(unread), %w(inbox), :offset => offset, :size => buf.string.bytesize
         #printf "; compressed doc %d %dk => %dk (%.0f%% compression rate) and wrote at offset %d\n", doc_id, rawbody.bytesize / 1024, buf.string.bytesize / 1024, 100.0 - (100.0 * buf.string.bytesize / rawbody.bytesize), offset
         { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
       end
@@ -100,10 +90,10 @@ class HeliotropeServer < Sinatra::Base
       continued = false
       results = if $search_state == [query.parsed_query_s, start]
         continued = true
-        $store.get_some_results num
+        @store.get_some_results num
       else
-        $store.set_query query
-        $store.get_some_results(start + num)[start, num]
+        @store.set_query query
+        @store.get_some_results(start + num)[start, num]
       end
       elapsed = Time.now - startt
 
@@ -136,7 +126,7 @@ class HeliotropeServer < Sinatra::Base
   get "/thread/:thread_id" do |thread_id|
     content_type :html
     thread_id = thread_id.to_i
-    messageinfos = $store.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+    messageinfos = @store.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
     first = messageinfos.find { |mi, level| mi[:subject] }[0]
 
     header("Thread: " + first[:subject]) +
@@ -151,10 +141,10 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
-    message = $store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    message = @store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
-      threadinfo = $store.load_threadinfo(message[:thread_id])
+      threadinfo = @store.load_threadinfo(message[:thread_id])
       docids = threadinfo[:structure].flatten
       idx = docids.index(message_id) + 1
       idx += 1 while(docids[idx] && (docids[idx] < 0))
@@ -167,7 +157,7 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
     message_id = message_id.to_i
     part_id = part_id.to_i
-    message = $store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    message = @store.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
       m = load_actual_message message[:offset], message[:size]
@@ -190,8 +180,8 @@ class HeliotropeServer < Sinatra::Base
 private
 
   def load_actual_message offset, size
-    $messages.seek offset
-    buf = StringIO.new $messages.read(size)
+    @messages.seek offset
+    buf = StringIO.new @messages.read(size)
     z = Zlib::GzipReader.new(buf)
     rawbody = z.read
     z.close
@@ -338,4 +328,34 @@ private
   end
 end
 
-HeliotropeServer.run!
+### execution begins here ###
+
+opts = Trollop::options do
+  banner <<EOS
+Usage: #{$0} [options]
+
+Where options include:
+EOS
+  opt :host, "Host interface to listen on", :default => "0.0.0.0", :short => "-H"
+  opt :port, "Port to listen on", :default => 8042
+  opt :dir, "Base directory for all index files", :default => "."
+  opt :mode, "Runtime mode", :default => "development"
+end
+
+store = Heliotrope::Store.new opts.dir
+messages = File.open(File.join(opts.dir, "messages"), "a+:BINARY")
+server = HeliotropeServer.new store, messages
+
+app = if opts.mode == "development"
+  Rack::Builder.new do
+    use Rack::CommonLogger, $stdout
+    use Rack::ShowExceptions
+    use Rack::Lint
+    run server
+  end.to_app
+else
+  server
+end
+
+handler = Rack::Handler.default
+handler.run app, :Port => opts.port
