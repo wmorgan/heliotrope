@@ -35,7 +35,7 @@ EOS
 
 Options for reading from a maildir directory:
 EOS
-  opt :maildir_dir, "maildir directory", :type => String
+  opt :maildir_dirs, "maildir directory", :type => :strings
   banner <<EOS
 
 Options for reading from an IMAP account:
@@ -53,17 +53,17 @@ If none of the mbox, maildir or IMAP options are given, will read a single
 message from stdin.
 EOS
 
-  conflicts :mbox_fn, :maildir_dir, :imap_host
+  conflicts :mbox_fn, :maildir_dirs, :imap_host
 end
 
-if opts.mbox_fn || opts.maildir_dir || opts.imap_host
+if opts.mbox_fn || opts.maildir_dirs || opts.imap_host
   Trollop::die "unknown option #{ARGV.first}" unless ARGV.empty?
 end
 
 source = if opts.mbox_fn
   Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.start_offset
-elsif opts.maildir_dir
-  Heliotrope::MaildirWalker.new opts.maildir_dir
+elsif opts.maildir_dirs
+  Heliotrope::MaildirWalker.new(*opts.maildir_dirs)
 elsif opts.imap_host
   username = opts.imap_username || begin
     print "IMAP username: "
