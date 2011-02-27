@@ -34,6 +34,8 @@ class Index
 
   MESSAGE_STATE = MESSAGE_MUTABLE_STATE + MESSAGE_IMMUTABLE_STATE
 
+  SNIPPET_MAX_SIZE = 100 # chars
+
   def initialize base_dir
     #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
     #@store = PStore.new File.join(base_dir, "pstore") # sucks
@@ -80,17 +82,20 @@ class Index
     ## been joined by adding this message.
     threadid, thread_structure, old_labels = thread_message! message
 
+    ## get the thread snippet
+    snippet = calc_thread_snippet thread_structure
+
     ## get the thread state
     thread_state = merge_thread_state thread_structure
 
-    ## now calculate the labels
+    ## calculate the labels
     labels = Set.new(labels) - MESSAGE_STATE # you can't set these
     labels += thread_state # but i can
     #labels += merge_thread_labels(thread_structure) # you can have these, though
     labels += old_labels # you can have these, though
 
     ## write thread to store
-    threadinfo = write_threadinfo! threadid, thread_structure, labels, thread_state
+    threadinfo = write_threadinfo! threadid, thread_structure, labels, thread_state, snippet
 
     ## add labels to every message in the thread (for search to work)
     write_thread_message_labels! thread_structure, labels
@@ -106,14 +111,23 @@ class Index
     key = "state/#{docid}"
     old_mstate = load_set key
     new_mstate = (old_mstate - MESSAGE_MUTABLE_STATE) + state
-    return [nil, nil, nil] if new_mstate == old_mstate
+    return nil if new_mstate == old_mstate
     write_set key, new_mstate
 
-    ## recalc thread state and labels
+    ## load the threadinfo for this message
     threadid = load_int "threadid/#{docid}"
     threadinfo = load_hash "thread/#{threadid}"
-    old_tstate = load_set "tstate/#{threadid}"
 
+    ## recalc thread snippet
+    key = "tsnip/#{threadid}"
+    old_snippet = load_string key
+    new_snippet = calc_thread_snippet threadinfo[:structure]
+    if old_snippet != new_snippet
+      write_string key, new_snippet
+    end
+
+    ## recalc thread state and labels
+    old_tstate = load_set "tstate/#{threadid}"
     new_tstate = merge_thread_state threadinfo[:structure]
     new_tlabels = nil
 
@@ -189,13 +203,15 @@ class Index
     h = load_thread threadid
     h.merge! :thread_id => threadid,
       :state => load_set("tstate/#{threadid}"),
-      :labels => load_set("tlabels/#{threadid}")
+      :labels => load_set("tlabels/#{threadid}"),
+      :snippet => load_string("tsnip/#{threadid}")
   end
 
   def load_messageinfo docid
     h = load_hash "doc/#{docid}"
     h.merge :state => load_set("state/#{docid}"),
       :thread_id => load_int("threadid/#{docid}"),
+      :snippet => load_string("msnip/#{docid}"),
       :message_id => docid
   end
 
@@ -226,6 +242,12 @@ class Index
   end
 
 private
+
+  def calc_thread_snippet thread_structure
+    docids = thread_structure.flatten.select { |id| id > 0 }
+    first_unread = docids.find { |docid| load_set("state/#{docid}").member?("unread") }
+    load_string("msnip/#{first_unread || docids.first}")
+  end
 
   ## get the state for a thread by merging the state from each message
   def merge_thread_state thread_structure
@@ -367,7 +389,7 @@ private
     end
   end
 
-  def write_threadinfo! threadid, thread_structure, labels, state
+  def write_threadinfo! threadid, thread_structure, labels, state, snippet
     subject = date = from = to = has_attachment = nil
 
     docids = thread_structure.flatten.select { |x| x > 0 }
@@ -388,6 +410,7 @@ private
     write_hash "thread/#{threadid}", threadinfo
     write_set "tlabels/#{threadid}", labels
     write_set "tstate/#{threadid}", state
+    write_string "tsnip/#{threadid}", snippet
     threadinfo
   end
 
@@ -421,6 +444,7 @@ private
     write_hash "doc/#{docid}", messageinfo
     write_set "state/#{docid}", state
     write_int "docid/#{message.msgid}", docid
+    write_string "msnip/#{docid}", message.snippet[0, SNIPPET_MAX_SIZE]
     @store_time += Time.now - startt
 
     messageinfo

@@ -71,6 +71,18 @@ class Message
   ENCRYPTED_MIME_TYPE = %r{multipart/encrypted;.*protocol="?application/pgp-encrypted"?}m
   SIGNATURE_ATTACHMENT_TYPE = %r{application\/pgp-signature\b}
 
+  def snippet
+    v = mime_parts("text/plain").each do |type, fn, content|
+      if (type =~ /text\//) && fn.nil?
+        head = content[0, 1000].split "\n"
+        head.shift while !head.empty? && head.first.empty? || head.first =~ /^\s*>|\-\-\-|(wrote|said):\s*$/
+        snippet = head.join(" ").gsub(/^\s+/, "").gsub(/\s+/, " ")[0, 100]
+        return snippet
+      end
+    end
+    ""
+  end
+
   def has_attachment?
     @has_attachment ||=
       mime_parts("text/plain").any? do |type, fn, content|
