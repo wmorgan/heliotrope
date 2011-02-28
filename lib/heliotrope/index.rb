@@ -455,9 +455,12 @@ private
     @in_ruby19_hell
   end
 
-  ## so horrible. we have to tell Ruby that every string that comes back from
-  ## the store is in utf8. the only way to do that, apparently, is to #dup and
-  ## then #force_encoding.
+  ## so horrible. strings marshalled in ruby < 1.9 come back as binary in ruby
+  ## 1.9. so either we break index compatibility when crossing ruby versions,
+  ## OR we have to MANUALLY tell Ruby that every string that comes back from
+  ## the store is in utf8.
+  ##
+  ## we take the second approach, but it burnssss usssss.
   STORE_ENCODING = Encoding::UTF_8
   def munge o
     return o unless in_ruby19_hell?
