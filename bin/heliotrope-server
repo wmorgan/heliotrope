@@ -209,18 +209,13 @@ private
   end
 
   MAX_PARTICIPANT_WIDTH = 40
-  MAX_SUBJECT_WIDTH = 50
+  MAX_SUBJECT_WIDTH = 80
 
   def threadinfo_to_html thread
-    pwidth = 0
-    participants = thread[:participants].
-      map { |v| Heliotrope::Person.from_string v }.
-      take_while do |p|
-        pwidth += p.display_name.length
-        pwidth < MAX_PARTICIPANT_WIDTH
-      end.
-      map { |p| link_to_search p.email, p.display_name }.
-      join(", ")
+    participants = thread[:participants][0, 3].map do |v|
+      p = Heliotrope::Person.from_string(v)
+      link_to_search p.email, p.display_name
+    end.join(", ")
 
     size = thread[:size]
     labels = (thread[:labels] - Heliotrope::Index::MESSAGE_STATE).map do |l|
@@ -228,6 +223,7 @@ private
     end.join(" ")
 
     subject = link_to_threadview thread[:thread_id], thread[:subject][0, MAX_SUBJECT_WIDTH]
+    snippet = thread[:snippet][0, MAX_SUBJECT_WIDTH - thread[:subject].size]
 
     date = escape_html Time.at(thread[:date]).strftime("%Y/%m/%d %H:%M")
 
@@ -244,7 +240,7 @@ private
   <td>#{flags}</td>
   <td>#{participants}</td>
   <td>#{size}</td>
-  <td>#{labels} #{subject}</td>
+  <td>#{labels} #{subject} #{snippet}...</td>
   <td>#{date}</td>
 </tr>
     EOS
@@ -263,11 +259,13 @@ private
         (message[:state].include?("encrypted") ? "E" : " ")
       date = escape_html Time.at(message[:date]).strftime("%Y/%m/%d %H:%M")
       subject = link_to_messageview message[:message_id], message[:subject]
+      snippet = message[:snippet][0, MAX_SUBJECT_WIDTH - message[:subject].size]
 
       <<-EOS
   <span>#{flags}</span>
   <span>#{link_to_search from.email, from.display_name}</span>
   <span>#{link_to_messageview message[:message_id], message[:subject]}</span>
+  <span>#{snippet} ...</span>
   <span>#{date}</span>
       EOS
     end
