@@ -450,19 +450,38 @@ private
     messageinfo
   end
 
-  def load_string key; @store[key] end
+  def in_ruby19_hell?
+    @in_ruby19_hell = "".respond_to?(:encoding) if @in_ruby19_hell.nil?
+    @in_ruby19_hell
+  end
+
+  ## so horrible. we have to tell Ruby that every string that comes back from
+  ## the store is in utf8. the only way to do that, apparently, is to #dup and
+  ## then #force_encoding.
+  STORE_ENCODING = Encoding::UTF_8
+  def munge o
+    return o unless in_ruby19_hell?
+    case o
+    when String; o.dup.force_encoding STORE_ENCODING
+    when Hash; o.each { |k, v| o[k] = v.dup.force_encoding(STORE_ENCODING) if v.is_a?(String) }
+    when Set; Set.new(o.map { |e| e.dup.force_encoding(STORE_ENCODING) })
+    else; o
+    end
+  end
+
+  def load_string key; munge(@store[key]) end
   def write_string key, value
     puts "; #{key} => #{value.inspect}" if @debug
     @store[key] = value.to_s
   end
 
-  def load_array key; @store.member?(key) ? Marshal.load(@store[key]) : [] end
+  def load_array key; @store.member?(key) ? munge(Marshal.load(@store[key])) : [] end
   def write_array key, value
     puts "; #{key} => #{value.inspect}" if @debug
     @store[key] = Marshal.dump(value.to_a)
   end
 
-  def load_hash key; @store.member?(key) ? Marshal.load(@store[key]) : {} end
+  def load_hash key; @store.member?(key) ? munge(Marshal.load(@store[key])) : {} end
   def write_hash key, value
     puts "; #{key} => #{value.inspect}" if @debug
     @store[key] = Marshal.dump(value.to_hash)
@@ -474,7 +493,7 @@ private
     @store[key] = Marshal.dump(value.to_i)
   end
 
-  def load_set key; @store.member?(key) ? Set.new(Marshal.load(@store[key])) : Set.new end
+  def load_set key; @store.member?(key) ? munge(Set.new(Marshal.load(@store[key]))) : Set.new end
   def write_set key, value
     puts "; #{key} => #{value.inspect}" if @debug
     @store[key] = Marshal.dump(value.to_set.to_a)
