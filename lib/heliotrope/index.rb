@@ -461,7 +461,8 @@ private
   ## the store is in utf8.
   ##
   ## we take the second approach, but it burnssss usssss.
-  STORE_ENCODING = Encoding::UTF_8
+  STORE_ENCODING = Encoding::UTF_8 if defined? Encoding
+
   def munge o
     return o unless in_ruby19_hell?
     case o
