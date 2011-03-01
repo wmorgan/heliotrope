@@ -232,7 +232,7 @@ private
     end.join(" ")
 
     subject = link_to_threadview thread[:thread_id], thread[:subject][0, MAX_SUBJECT_WIDTH]
-    snippet = thread[:snippet][0, MAX_SUBJECT_WIDTH - thread[:subject].size]
+    snippet = (thread[:snippet] || "?") # [0, MAX_SUBJECT_WIDTH - thread[:subject].size]
 
     date = escape_html Time.at(thread[:date]).strftime("%Y/%m/%d %H:%M")
 
@@ -247,9 +247,9 @@ private
     <<-EOS
 <tr>
   <td>#{flags}</td>
-  <td>#{participants}</td>
+  <td><div class="participants">#{participants}</div></td>
   <td>#{size}</td>
-  <td>#{labels} #{subject} #{snippet}...</td>
+  <td><div class="description">#{labels} #{subject} #{escape_html snippet}</div></td>
   <td>#{date}</td>
 </tr>
     EOS
@@ -274,7 +274,7 @@ private
   <span>#{flags}</span>
   <span>#{link_to_search from.email.downcase, from.display_name}</span>
   <span>#{link_to_messageview message[:message_id], message[:subject]}</span>
-  <span>#{snippet} ...</span>
+  <span>#{escape_html snippet} ...</span>
   <span>#{date}</span>
       EOS
     end
@@ -296,15 +296,35 @@ private
     %{<a href="/message/#{message_id}/part/#{part_id}">#{escape_html text}</a>}
   end
 
-  def inline_image message_id, part_id
-    %{<img src="/message/#{message_id}/part/#{part_id}">}
+  def link_to_raw message_id, text
+    %{<a href="/message/#{message_id}/raw">#{escape_html text}</a>}
   end
+
+  def inline_image_link message_id, part_id; "/message/#{message_id}/part/#{part_id}" end
+  def inline_image message_id, part_id; %{<img src="#{inline_image_link message_id, part_id}">} end
 
   def header title, query=""
     title = escape_html title
     <<-EOS
 <!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Heliotrope: #{title}</title>
-<meta name="application-name" content="heliotrope"></head><body><h1>#{title}</h1>
+<meta name="application-name" content="heliotrope">
+<style type="text/css">
+div.description {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  width: 600px;
+}
+
+div.participants {
+  overflow: hidden;
+  width: 200px;
+}
+
+td {
+  white-space: nowrap;
+}
+</style>
+</head><body><h1>#{title}</h1>
 <div>
 <form method="get" action="/search">
   #{link_to_search "~inbox", "[inbox]"}
