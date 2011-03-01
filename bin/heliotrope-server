@@ -64,7 +64,7 @@ class HeliotropeServer < Sinatra::Base
       CGI.unescape $1
     else
       params["q"]
-    end.downcase
+    end
 
     raise RequestError, "need a query" unless query
     start = (params["start"] || 0).to_i
@@ -178,10 +178,10 @@ private
     s = "<div>#{link_to_threadview message[:thread_id], "<< back to thread"}"
     s += " | #{link_to_messageview next_messageid, "next message in thread >>"}" if next_messageid
     s += "</div>"
-    s += %{<div style="padding-top: 1em">From: #{link_to_search m.from.email, m.from}</div>}
-    s += "<div>To: #{m.to.map { |p| link_to_search p.email, p }.join(", ")}</div>"
-    s += "<div>Cc: #{m.cc.map { |p| link_to_search p.email, p }.join(", ")}</div>" unless m.cc.empty?
-    s += "<div>Bcc: #{m.bcc.map { |p| link_to_search p.email, p }.join(", ")}</div>" unless m.bcc.empty?
+    s += %{<div style="padding-top: 1em">From: #{link_to_search m.from.email.downcase, m.from}</div>}
+    s += "<div>To: #{m.to.map { |p| link_to_search p.email.downcase, p }.join(", ")}</div>"
+    s += "<div>Cc: #{m.cc.map { |p| link_to_search p.email.downcase, p }.join(", ")}</div>" unless m.cc.empty?
+    s += "<div>Bcc: #{m.bcc.map { |p| link_to_search p.email.downcase, p }.join(", ")}</div>" unless m.bcc.empty?
     s += "<div>Date: #{Time.at m.date}</div>"
     s += "<div>Subject: #{escape_html m.subject}</div>"
     m.mime_parts("text/html").each_with_index do |(type, fn, content), i|
@@ -214,7 +214,7 @@ private
   def threadinfo_to_html thread
     participants = thread[:participants][0, 3].map do |v|
       p = Heliotrope::Person.from_string(v)
-      link_to_search p.email, p.display_name
+      link_to_search p.email.downcase, p.display_name
     end.join(", ")
 
     size = thread[:size]
@@ -263,7 +263,7 @@ private
 
       <<-EOS
   <span>#{flags}</span>
-  <span>#{link_to_search from.email, from.display_name}</span>
+  <span>#{link_to_search from.email.downcase, from.display_name}</span>
   <span>#{link_to_messageview message[:message_id], message[:subject]}</span>
   <span>#{snippet} ...</span>
   <span>#{date}</span>
