@@ -165,6 +165,13 @@ class HeliotropeServer < Sinatra::Base
     end
   end
 
+  get "/message/:message_id/raw" do |message_id|
+    content_type :text
+    message_id = message_id.to_i
+    message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    @store.read message[:loc]
+  end
+
 private
 
   def load_actual_message offset
@@ -195,6 +202,8 @@ private
         s += make_html type, content
       end
     end
+
+    s += "<div>" + link_to_raw(mid, "(view raw)") + "</div>"
 
     #@index.update_message_state(message[:message_id], (message[:state] - ["unread"]))
     s
