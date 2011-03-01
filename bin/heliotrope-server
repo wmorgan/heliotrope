@@ -152,7 +152,7 @@ class HeliotropeServer < Sinatra::Base
       parts = m.mime_parts "text/html"
 
       raise RequestError, "can't find that part" unless part_id >= 0 && part_id <= parts.size
-      type, fn, content = parts[part_id]
+      type, fn, id, content = parts[part_id]
       if type =~ /^(\S+?);/
         type = $1
       end
@@ -180,7 +180,13 @@ private
   end
 
   def message_to_html message, next_messageid
+    mid = message[:message_id]
     m = load_actual_message message[:loc]
+    parts = m.mime_parts "text/html"
+
+    ## build up the cid pointers for internal content
+    cids = {}
+    parts.each_with_index { |(type, fn, id, content), i| cids[id] = i if id }
 
     s = "<div>#{link_to_threadview message[:thread_id], "<< back to thread"}"
     s += " | #{link_to_messageview next_messageid, "next message in thread >>"}" if next_messageid
@@ -191,15 +197,16 @@ private
     s += "<div>Bcc: #{m.bcc.map { |p| link_to_search p.email.downcase, p }.join(", ")}</div>" unless m.bcc.empty?
     s += "<div>Date: #{Time.at m.date}</div>"
     s += "<div>Subject: #{escape_html m.subject}</div>"
-    m.mime_parts("text/html").each_with_index do |(type, fn, content), i|
+
+    parts.each_with_index do |(type, fn, id, content), i|
       s += %{<div style="padding-top: 1em">}
       if fn
-        s += link_to_attachment message[:message_id], i, "[attachment: #{fn} (#{type})]"
+        s += link_to_attachment mid, i, "[attachment: #{fn} (#{type})]"
         if type =~ /^image\// # show a preview
-          s += inline_image(message[:message_id], i)
+          s += inline_image(mid, i)
         end
       else
-        s += make_html type, content
+        s += make_html type, content, mid, cids
       end
     end
 
@@ -209,9 +216,10 @@ private
     s
   end
 
-  def make_html type, content
+  ## this whole thing seems pretty dangerous...
+  def make_html type, content, message_id, cids
     case type
-    when /^text\/html/; content
+    when /^text\/html/; cids.inject(content) { |c, (k, v)| c.gsub("cid:#{k}", inline_image_link(message_id, v)) }
     when /^text\/plain/; escape_html(content).gsub("\n", "<br/>")
     else escape_html(content)
     end

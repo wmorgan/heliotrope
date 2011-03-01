@@ -53,7 +53,7 @@ class Message
       v = ([from.indexable_text] +
         recipients.map { |r| r.indexable_text } +
         [subject] +
-        mime_parts("text/plain").map do |type, fn, content|
+        mime_parts("text/plain").map do |type, fn, id, content|
           if fn
             fn
           elsif type =~ /text\//
@@ -72,7 +72,7 @@ class Message
   SIGNATURE_ATTACHMENT_TYPE = %r{application\/pgp-signature\b}
 
   def snippet
-    v = mime_parts("text/plain").each do |type, fn, content|
+    v = mime_parts("text/plain").each do |type, fn, id, content|
       if (type =~ /text\//) && fn.nil?
         head = content[0, 1000].split "\n"
         head.shift while !head.empty? && head.first.empty? || head.first =~ /^\s*>|\-\-\-|(wrote|said):\s*$/
@@ -85,7 +85,7 @@ class Message
 
   def has_attachment?
     @has_attachment ||=
-      mime_parts("text/plain").any? do |type, fn, content|
+      mime_parts("text/plain").any? do |type, fn, id, content|
         fn && (type !~ SIGNATURE_ATTACHMENT_TYPE)
     end
   end
@@ -130,8 +130,9 @@ private
     else
       type = mime_type_for part
       filename = mime_filename_for part
+      id = mime_id_for part
       content = mime_content_for part, preferred_type
-      [[type, filename, content]]
+      [[type, filename, id, content]]
     end
   end
 
@@ -146,6 +147,14 @@ private
 
   def mime_type_for part
     (part.header["content-type"] || "text/plain").gsub(/\s+/, " ").strip
+  end
+
+  def mime_id_for part
+    header = part.header["content-id"]
+    case header
+      when /<(.+?)>/; $1
+      else header
+    end
   end
 
   ## a filename, or nil

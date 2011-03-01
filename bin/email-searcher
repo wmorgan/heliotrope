@@ -218,7 +218,7 @@ EOS
         puts "Bcc: #{m.bcc.join(", ")}" unless m.bcc.empty?
         puts "Date: #{Time.at m.date}"
         puts "Subject: #{m.subject}\n\n"
-        m.mime_parts("text/plain").each do |type, fn, content|
+        m.mime_parts("text/plain").each do |type, fn, id, content|
           if fn
             puts "\n[attachment (#{type}): #{fn}]"
           else
