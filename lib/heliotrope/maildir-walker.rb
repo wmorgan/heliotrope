@@ -1,3 +1,5 @@
+require 'time'
+
 module Heliotrope
 class MaildirWalker
   def initialize(*dirs)
@@ -25,7 +27,25 @@ private
     dirs = @dirs.map { |d| d.gsub(/([\*\?\[\]])/, '\\\\\1') } # have to escape for globbing
     files = dirs.map { |dir| Dir[File.join(dir, "cur", "*")] + Dir[File.join(dir, "new", "*")] }.flatten.sort
     puts "; found #{files.size} messages"
-    files
+    puts "; reading in dates..."
+    file_dates = files.map { |fn| get_date_in_file fn }
+    puts "; sorting..."
+    files = files.zip(file_dates).sort_by { |fn, date| date }
+    files.map { |fn, date| fn }
+  end
+
+  def get_date_in_file fn
+    File.open(fn) do |f|
+      while(l = f.gets)
+        if l =~ /^Date:\s+(.+\S)\s*$/
+          date = $1
+          pdate = Time.parse($1)
+          return pdate
+        end
+      end
+    end
+    puts "; warning: no date in #{fn}"
+    Time.at 0
   end
 end
 end
