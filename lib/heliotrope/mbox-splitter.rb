@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 ## a custom mbox splitter / from line detector. rmail has one, but it splits on
 ## occurrences of "From " in text lines too. we try and be a little smarter
 ## here and validate the format somewhat.

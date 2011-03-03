@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'whistlepig'
 require 'oklahoma_mixer'
 require 'set'

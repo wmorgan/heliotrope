@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'rmail'
 require 'open3'
 require 'digest/md5'

@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 ## just a wrapper around a Whistlepig query. trying to protect the user from
 ## explicit whistlepig dependencies
 require 'whistlepig'

@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 module Heliotrope
 class Person
   def initialize name, email, handle
