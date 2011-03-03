@@ -469,8 +469,9 @@ private
     return o unless in_ruby19_hell?
     case o
     when String; o.dup.force_encoding STORE_ENCODING
-    when Hash; o.each { |k, v| o[k] = v.dup.force_encoding(STORE_ENCODING) if v.is_a?(String) }
-    when Set; Set.new(o.map { |e| e.dup.force_encoding(STORE_ENCODING) })
+    when Hash; o.each { |k, v| o[k] = munge(v) }
+    when Set; Set.new(o.map { |e| munge(e) })
+    when Array; o.map { |e| munge(e) }
     else; o
     end
   end
