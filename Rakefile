@@ -13,6 +13,17 @@ spec = Gem::Specification.new do |s|
  s.executables = []
  s.rubyforge_project = "sup"
  s.description = "Heliotrope is a personal, threaded, search-centric email server."
+
+ s.add_dependency 'trollop', '>= 1.16.2'
+ s.add_dependency 'whistlepig', '>= 0.4'
+ s.add_dependency 'console', '>= 0.3'
+ s.add_dependency 'rmail', '>= 1.0.0'
+
+ s.add_dependency 'oklahoma_mixer'
+ s.add_dependency 'rest-client'
+ s.add_dependency 'rack'
+ s.add_dependency 'json'
+ s.add_dependency 'sinatra'
 end
 
 task :rdoc do |t|
