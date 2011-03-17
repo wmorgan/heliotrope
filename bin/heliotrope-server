@@ -377,5 +377,15 @@ else
   server
 end
 
+## yes, we have to do this ourselves here. thanks, rack. no, i don't want to
+## run with your crummy set of commandline options.
 handler = Rack::Handler.default
+trap(:INT) do
+  if handler.respond_to?(:shutdown)
+    handler.shutdown
+  else
+    exit
+  end
+end
+
 handler.run app, :Port => opts.port
