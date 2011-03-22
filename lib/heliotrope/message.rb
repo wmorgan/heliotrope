@@ -3,6 +3,7 @@
 require 'rmail'
 require 'open3'
 require 'digest/md5'
+require 'json'
 
 module Heliotrope
 class InvalidMessageError < StandardError; end
@@ -47,6 +48,16 @@ class Message
   end
 
   attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs
+
+  def to_json preferred_type
+    parts = mime_parts(preferred_type).map do |type, fn, id, content|
+      { :type => type, :fn => fn, :id => id, :content => content }
+    end
+
+    { :from => from, :to => to, :cc => cc, :bcc => bcc,
+      :subject => subject, :date => date, :refs => refs,
+      :parts => parts }.to_json
+  end
 
   def recipients; ([to] + cc + bcc).flatten.compact end
 

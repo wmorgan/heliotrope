@@ -10,11 +10,16 @@ require "heliotrope"
 require 'cgi'
 require 'rack'
 
+class Set
+  ## apparently we're going to have to do this the hard way
+  def to_json(*a); to_a.to_json(*a) end
+end
+
 class HeliotropeServer < Sinatra::Base
   def initialize index, store
     @index = index
     @store = store
-    @search_state = []
+    @search_state = [] # keep this around for optimization purposes
     super()
   end
 
@@ -57,9 +62,7 @@ class HeliotropeServer < Sinatra::Base
     end.to_json
   end
 
-  get "/search" do
-    content_type :html
-
+  def get_search_results
     ## work around a rack (?) bug where quotes are omitted in queries like "hello bob"
     query = if env["rack.request.query_string"] =~ /\bq=(.+?)(&|$)/
       CGI.unescape $1
@@ -73,21 +76,36 @@ class HeliotropeServer < Sinatra::Base
     num = DEFAULT_SEARCH_PAGE_SIZE if num <= 0
     num = [num, MAX_SEARCH_PAGE_SIZE].min
 
+    query = Heliotrope::Query.new "body", query
+    startt = Time.now
+    continued = false
+    results = if @search_state == [query.parsed_query_s, start]
+      continued = true
+      @index.get_some_results num
+    else
+      @index.set_query query
+      @index.get_some_results(start + num)[start, num]
+    end
+    elapsed = Time.now - startt
+
+    @search_state = [query.parsed_query_s, start + num]
+
+    [query, results, { :start => start, :num => num, :elapsed => elapsed, :continued => continued }]
+  end
+
+  get "/search.json" do
+    content_type :json
+    query, results, info = get_search_results
+
+    results.to_json
+  end
+
+  get "/search" do
+    content_type :html
+
     begin
-      query = Heliotrope::Query.new "body", query
-      startt = Time.now
-      continued = false
-      results = if $search_state == [query.parsed_query_s, start]
-        continued = true
-        @index.get_some_results num
-      else
-        @index.set_query query
-        @index.get_some_results(start + num)[start, num]
-      end
-      elapsed = Time.now - startt
-
-      $search_state = [query.parsed_query_s, start + num]
-
+      query, results, info = get_search_results
+      start, num = info[:start], info[:num]
       nav = %{<div style="padding-top: 1em">}
       if start > 0
         nav += link_to_search(query.original_query_s, "<< top", 0, num) + "|" + link_to_search(query.original_query_s, "<< previous", [start - num, 0].max, num)
@@ -102,7 +120,7 @@ class HeliotropeServer < Sinatra::Base
 
       header("Search: #{query.original_query_s}", query.original_query_s) +
         "<div>Parsed query: #{escape_html query.parsed_query_s}</div>" +
-        "<div>Search took #{sprintf '%.2f', elapsed}s and #{continued ? 'was' : 'was NOT'} continued</div>" +
+        "<div>Search took #{sprintf '%.2f', info[:elapsed]}s and #{info[:continued] ? 'was' : 'was NOT'} continued</div>" +
         "#{nav}<table>" +
         results.map { |r| threadinfo_to_html r }.join +
         "</table>#{nav}" + footer
@@ -112,10 +130,17 @@ class HeliotropeServer < Sinatra::Base
     end
   end
 
+  get "/thread/:thread_id.json" do |thread_id|
+    content_type :json
+    messageinfos = get_thread_summary thread_id
+    messageinfos.to_json
+  end
+
   get "/thread/:thread_id" do |thread_id|
     content_type :html
+
     thread_id = thread_id.to_i
-    messageinfos = @index.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+    messageinfos = get_thread_summary thread_id
     first = messageinfos.find { |mi, level| mi[:subject] }[0]
 
     header("Thread: " + first[:subject]) +
@@ -127,10 +152,23 @@ class HeliotropeServer < Sinatra::Base
       footer
   end
 
+  def get_thread_summary thread_id
+    @index.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+  end
+
+  get "/message/:message_id.json" do |message_id|
+    content_type :json
+    message_id = message_id.to_i
+    messageinfo = get_message_summary message_id
+    message = load_actual_message messageinfo[:loc]
+
+    message.to_json(params["mime_type_pref"] || "text/html")
+  end
+
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
-    message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    message = get_message_summary message_id
 
     begin
       threadinfo = @index.load_threadinfo(message[:thread_id])
@@ -141,6 +179,10 @@ class HeliotropeServer < Sinatra::Base
     rescue Heliotrope::InvalidMessageError => e
       raise RequestError, "can't parse message #{message_id.inspect}: #{e.message}"
     end
+  end
+
+  def get_message_summary message_id
+    @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
   end
 
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
