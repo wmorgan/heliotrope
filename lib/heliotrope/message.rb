@@ -49,14 +49,15 @@ class Message
 
   attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs
 
-  def to_json preferred_type
+  def to_json message_id, preferred_type
     parts = mime_parts(preferred_type).map do |type, fn, id, content|
       { :type => type, :fn => fn, :id => id, :content => content }
     end
 
     { :from => from, :to => to, :cc => cc, :bcc => bcc,
       :subject => subject, :date => date, :refs => refs,
-      :parts => parts }.to_json
+      :parts => parts, :message_id => message_id,
+      :snippet => snippet }.to_json
   end
 
   def recipients; ([to] + cc + bcc).flatten.compact end
