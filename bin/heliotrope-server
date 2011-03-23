@@ -168,7 +168,10 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
+    raise RequestError, "invalid message id" unless message_id > 0
+
     message = get_message_summary message_id
+    raise RequestError, "invalid message id" unless message
 
     begin
       threadinfo = @index.load_threadinfo(message[:thread_id])
