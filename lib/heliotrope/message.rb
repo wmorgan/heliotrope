@@ -49,15 +49,29 @@ class Message
 
   attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs
 
+  ## we don't encode any non-text parts here, because json encoding of
+  ## binary objects is crazy-talk, and because those are likely to be
+  ## big anyways.
   def to_json message_id, preferred_type
-    parts = mime_parts(preferred_type).map do |type, fn, id, content|
-      { :type => type, :fn => fn, :id => id, :content => content }
-    end
+    parts = mime_parts(preferred_type).map do |type, fn, cid, content, size|
+      if type =~ /^text\//
+        { :type => type, :filename => fn, :cid => cid, :content => content, :here => true }
+      else
+        { :type => type, :filename => fn, :cid => cid, :size => content.size, :here => false }
+      end
+    end.compact
 
-    { :from => from, :to => to, :cc => cc, :bcc => bcc,
-      :subject => subject, :date => date, :refs => refs,
-      :parts => parts, :message_id => message_id,
-      :snippet => snippet }.to_json
+    { :from => from,
+      :to => to,
+      :cc => cc,
+      :bcc => bcc,
+      :subject => subject,
+      :date => date,
+      :refs => refs,
+      :parts => parts,
+      :message_id => message_id,
+      :snippet => snippet
+    }.to_json
   end
 
   def recipients; ([to] + cc + bcc).flatten.compact end
