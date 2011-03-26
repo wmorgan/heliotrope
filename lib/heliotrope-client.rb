@@ -25,6 +25,11 @@ class HeliotropeClient
     JSON.parse response
   end
 
+  def message_part message_id, part_id
+    ## this is not a json blob, but a binary attachment
+    @resource["message/#{message_id}/part/#{part_id}"].get
+  end
+
 private
 
   def in_ruby19_hell?
