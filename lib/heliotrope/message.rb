@@ -62,9 +62,9 @@ class Message
     end.compact
 
     { :from => from,
-      :to => to,
-      :cc => cc,
-      :bcc => bcc,
+      :to => to || [],
+      :cc => cc || [],
+      :bcc => bcc || [],
       :subject => subject,
       :date => date,
       :refs => refs,
