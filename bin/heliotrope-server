@@ -88,6 +88,9 @@ class HeliotropeServer < Sinatra::Base
     end
     elapsed = Time.now - startt
 
+    ## remove this field from the results because it's not useful and can be large
+    results.each { |r| r.delete :structure }
+
     @search_state = [query.parsed_query_s, start + num]
 
     [query, results, { :start => start, :num => num, :elapsed => elapsed, :continued => continued }]
