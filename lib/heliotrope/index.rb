@@ -3,6 +3,7 @@
 require 'whistlepig'
 require 'oklahoma_mixer'
 require 'set'
+require 'fileutils'
 
 class Array
   def ordered_uniq
@@ -41,6 +42,7 @@ class Index
   def initialize base_dir
     #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
     #@store = PStore.new File.join(base_dir, "pstore") # sucks
+    FileUtils.mkdir_p base_dir
     @store = OklahomaMixer.open File.join(base_dir, "store.tch")
     @index = Whistlepig::Index.new File.join(base_dir, "index")
     @query = nil # we always have (at most) one active query
