@@ -459,13 +459,19 @@ private
     @in_ruby19_hell
   end
 
-  ## so horrible. strings marshalled in ruby < 1.9 come back as binary in ruby
-  ## 1.9. so either we break index compatibility when crossing ruby versions,
-  ## OR we have to MANUALLY tell Ruby that every string that comes back from
-  ## the store is in utf8.
+  ## storing stuff is tricky
   ##
-  ## we take the second approach, but it burnssss usssss.
-  STORE_ENCODING = Encoding::UTF_8 if defined? Encoding
+  ## strings can be stored directly but they MUST be marked (via
+  ## #force_encoding) as binary, otherwise OklahomerMixer will truncate (!!!)
+  ## #them if they contain any super-ASCII characters. (we could marshal
+  ## #strings, but it costs quite a few bytes.)
+  ##
+  ## other objects are just marshalled, which is fine, and in ruby 1.9, string
+  ## encodings will be preserved. HOWEVER, we need to recursively find all
+  ## strings and mark them as utf-8 anyways, since they might've been
+  ## marshalled by a 1.8 process, in which case they will come back as binary.
+
+  STORE_ENCODING = Encoding::UTF_8 if defined?(Encoding)
 
   def munge o
     return o unless in_ruby19_hell?
@@ -478,10 +484,18 @@ private
     end
   end
 
+  def protect_string s
+    if in_ruby19_hell?
+      s.force_encoding "binary"
+    else
+      s
+    end
+  end
+
   def load_string key; munge(@store[key]) end
   def write_string key, value
     puts "; #{key} => #{value.inspect}" if @debug
-    @store[key] = value.to_s
+    @store[key] = protect_string(value.to_s)
   end
 
   def load_array key; @store.member?(key) ? munge(Marshal.load(@store[key])) : [] end
