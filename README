@@ -1,52 +1,69 @@
 Heliotrope is a personal, search-centric, threaded email server. It provides a
-backend service against which email clients / MUAs can be written. It features:
+backend service against which email clients / MUAs can be written.
 
-- email storage and retrieval, of course
-- full-text search over all messages
-- email threading
+Heliotrope provides all the features you actually want in a modern email
+client:
+
+- fast, full-text search over all messages
+- automatic threading
 - arbitrary labels
 - a sophisticated query language
-- built-in handling of signed and encrypted email
-- a fast, JSON-over-HTTP API
+- support for signed and encrypted email
+- an extensible JSON-over-HTTP API
 
 Heliotrope is a work in progress. It is not stable. It is not tested.
 
-Trying it out:
+WHY ANOTHER PROTOCOL? WHY NOT JUST USE IMAP? 
 
+Because IMAP is terrible and you want all those features listed above.
+
+TRYING IT OUT
+
+Heliotrope is written in a mixture of Ruby and C. You will need a working C
+compiler, and a modern Ruby. 1.8.7 or 1.9.2 are good choices.
+
+Then do this:
 1. Install your distro's TokyoTyrant or TokyoCabinet libraries. On Ubuntu, it's
    `sudo apt-get install libtokyocabinet8`.
-2. `gem install trollop whistlepig console rest-client sinatra rubymail oklahoma_mixer`
-3. ruby -Ilib bin/heliotrope-server &
-4. ruby -Ilib bin/heliotrope-add -h
+2. Run `gem install trollop whistlepig console rest-client sinatra rubymail oklahoma_mixer`
+3. mkdir <mailstore> # wherever you want heliotrope to store its stuff
+3. ruby -Ilib bin/heliotrope-server -d <mailstore> &
 
-Once the server is running, you can use heliotrope-add to add some email. It is
-slow, but it works.
+Heliotrope exposes a simple HTML interface as well. If you point your browser
+to http://localhost:8042, you will now see your empty mailstore.
 
-Add a single email:
-  cat email.txt | ruby -Ilib bin/heliotrope-add
+IMPORTING SOME MAIL
+
+First, kill your server. You can add emails to the server one at a time when
+it's running (see ADDING EMAIL), but for bulk imports, it's much faster to
+avoid the HTTP overhead.
 
 Add a pre-existing mbox:
-  ruby -Ilib bin/heliotrope-add -m <mbox>
+  ruby -Ilib bin/heliotrope-add -m <mbox> -d <mailstore>
 
 Add a pre-existing maildir:
-  ruby -Ilib bin/heliotrope-add -a <maildir>
+  ruby -Ilib bin/heliotrope-add -a <maildir> -d <mailstore>
 
-Add a pre-existing IMAP account:
-  ruby -Ilib bin/heliotrope-add -i <imap server>
+Add a pre-existing IMAP account: (slow!)
+  ruby -Ilib bin/heliotrope-add -i <imap server> -d <mailstore>
 
-Once email has been added to Heliotrope, you can discard it. (Ok, maybe wait
-until Heliotrope is stable first.) Now point your browser to
-http://localhost:8042 for a simple demo of the API calls.
+You're looking at around 50 messages/sec, so you might want to limit the
+number of emails imported with --num-messages if you're just playing around.
 
-DEBUGGING / EXPERIMENTAL HTML INTERFACE
----------------------------------------
+Ok, now restart the server. You should see stuff at http://localhost:8042.
 
-Point your browser to http://localhost:8042. This HTML interface is for
-debugging, experimental, and development purposes.  It is not pretty, but it is
-functional, and should give you an idea of what types of responses the server
-can provide.
+ADDING EMAIL
 
-JSON API
---------
+Once the server is running, you can use heliotrope-add to add individual emails
+as they arrive.
+
+To add a single email:
+  cat email.txt | ruby -Ilib bin/heliotrope-add
+
+Once Heliotrope is production-ready, I'll add some documentation about
+procmailrc or whatever.
+
+JSON API SPEC
+-------------
 
 Coming soon!
