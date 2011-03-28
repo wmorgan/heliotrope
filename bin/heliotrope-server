@@ -221,6 +221,17 @@ class HeliotropeServer < Sinatra::Base
     @store.read message[:loc]
   end
 
+  get "/labels" do
+    content_type :json
+    @index.all_labels.to_json
+  end
+
+  post "/labels/prune" do
+    content_type :json
+    @index.prune_labels!
+    @index.all_labels.to_json
+  end
+
 private
 
   def load_actual_message offset
