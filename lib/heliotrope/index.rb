@@ -104,6 +104,9 @@ class Index
     ## add labels to every message in the thread (for search to work)
     write_thread_message_labels! thread_structure, labels
 
+    ## add the labels to the set of all labels we've ever seen
+    add_labels_to_labellist! labels
+
     ## congrats, you have a doc and a thread!
     [docid, threadid]
   end
@@ -160,6 +163,9 @@ class Index
 
     threadinfo = load_hash "thread/#{threadid}"
     write_thread_message_labels! threadinfo[:structure], new_tlabels
+
+    ## add the labels to the set of all labels we've ever seen
+    add_labels_to_labellist! labels
 
     new_tlabels
   end
@@ -245,7 +251,36 @@ class Index
     thread_ids.size
   end
 
+  def all_labels
+    load_set "labellist"
+  end
+
+  ## expensive! runs a query for each label and sees if there are any docs for
+  ## it
+  def prune_labels!
+    pruned_labels = all_labels.reject do |l|
+      query = Whistlepig::Query.new "body", "~#{l}"
+      @index.setup_query query
+      docids = begin
+        @index.run_query query, 1
+      ensure
+        @index.teardown_query query
+      end
+
+      docids.empty?
+    end
+
+    write_set "labellist", pruned_labels
+  end
+
 private
+
+  def add_labels_to_labellist! labels
+    key = "labellist"
+    labellist = load_set key
+    labellist_new = labellist + labels
+    write_set key, labellist_new unless labellist == labellist_new
+  end
 
   def calc_thread_snippet thread_structure
     docids = thread_structure.flatten.select { |id| id > 0 }

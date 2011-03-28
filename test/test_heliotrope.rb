@@ -355,9 +355,43 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_includes docid3, docids
   end
 
+  def test_labellist_updated_by_adding_messages_with_labels
+    assert_empty @index.all_labels
+
+    @index.add_message MockMessage.new, [], %w(potato)
+    assert_equal Set.new(%w(potato)), @index.all_labels
+
+    @index.add_message MockMessage.new, [], %w(potato leek)
+    assert_equal Set.new(%w(potato leek)), @index.all_labels
+  end
+
+  def test_labellist_updated_by_tweaking_thread_labels
+    docid, threadid = @index.add_message MockMessage.new, [], %w(potato)
+    assert_equal Set.new(%w(potato)), @index.all_labels
+
+    @index.update_thread_labels threadid, %w(muffin)
+    assert_includes "muffin", @index.all_labels
+  end
+
+  def test_labellist_pruning_removes_labels_without_corresponding_threads
+    docid, threadid = @index.add_message MockMessage.new, [], %w(potato)
+    assert_equal Set.new(%w(potato)), @index.all_labels
+
+    @index.update_thread_labels threadid, %w(muffin)
+    @index.prune_labels!
+    assert_includes "muffin", @index.all_labels
+    assert_does_not_include "potato", @index.all_labels
+  end
+
 private
 
   def assert_includes v, set # standard one seems to have these things reversed
     assert set.include?(v), "#{set.inspect[0..50]} does not include #{v.inspect}"
   end
+
+  def assert_does_not_include v, set
+    assert !set.include?(v), "#{set.inspect[0..50]} includes #{v.inspect}"
+  end
+
+  def assert_empty x; x.empty? end unless respond_to?(:assert_empty)
 end
