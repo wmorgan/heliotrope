@@ -105,6 +105,7 @@ class Decoder
   def decode_rfc2047 target_charset, from
     return unless is_rfc2047_encoded? from
 
+    from = force_to_ascii from # strip any naughty characters---you should be rfc2047-encoding those!
     from = from.gsub RFC2047_WORDSEQ, '\1'
     out = from.gsub RFC2047_WORD do |word|
       source_charset, encoding, text = $1, $2, $3
@@ -122,7 +123,6 @@ class Decoder
       transcode target_charset, source_charset, text
     end
 
-    #out.force_encoding target_charset if in_ruby19_hell? # not necessary?
     out
   end
   end
