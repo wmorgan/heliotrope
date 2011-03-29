@@ -17,20 +17,33 @@ WHY ANOTHER PROTOCOL? WHY NOT JUST USE IMAP?
 
 Because IMAP is terrible and you want all those features listed above.
 
-TRYING IT OUT
+REQUIREMENTS
 
 Heliotrope is written in a mixture of Ruby and C. You will need a working C
 compiler, and a modern Ruby. 1.8.7 or 1.9.2 are good choices.
 
-Then do this:
-1. Install your distro's TokyoTyrant or TokyoCabinet libraries. On Ubuntu, it's
-   `sudo apt-get install libtokyocabinet8`.
-2. Run `gem install trollop whistlepig console rest-client sinatra rubymail oklahoma_mixer`
-3. mkdir <mailstore> # wherever you want heliotrope to store its stuff
-3. ruby -Ilib bin/heliotrope-server -d <mailstore> &
+Heliotrope uses html2text to generate text from HTML attachments. You will
+need this or some reasonable alternative.
 
-Heliotrope exposes a simple HTML interface as well. If you point your browser
-to http://localhost:8042, you will now see your empty mailstore.
+Do this:
+0. Install html2text. On Debian-based Linux distros, it's `sudo apt-get install html2text`.
+1. Install your distro's TokyoTyrant or TokyoCabinet libraries. On Debian-based Linux distros, it's
+   `sudo apt-get install libtokyocabinet8`.
+2. Install a modern Ruby. I recommend 1.9.2. On Debian-based Linux distros, you can try the
+   ruby1.9.1 package. Or you can download and compile it from http://www.ruby-lang.org/en/downloads/.
+3. Run `gem install trollop whistlepig console rest-client sinatra rmail oklahoma_mixer`
+   (or gem1.9.1 if you're using the Debian version).
+4. mkdir <mailstore> # wherever you want heliotrope to store its stuff
+
+RUNNING IT
+
+First, follow the REQUIREMENTS above.
+
+Then, `git clone https://github.com/wmorgan/heliotrope.git` and run `ruby -Ilib
+bin/heliotrope-server -d <mailstore>`. (Or ruby1.9.1 if you're using the Debian thing.)
+
+Heliotrope exposes a simple debugging HTML interface. If you point your browser
+to http://localhost:8042, you should see your empty mailstore.
 
 IMPORTING SOME MAIL
 
