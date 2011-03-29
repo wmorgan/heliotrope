@@ -192,9 +192,8 @@ class HeliotropeServer < Sinatra::Base
   end
 
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
-    message_id = message_id.to_i
+    message = get_message_summary message_id
     part_id = part_id.to_i
-    message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
 
     begin
       m = load_actual_message message[:loc]
@@ -216,8 +215,7 @@ class HeliotropeServer < Sinatra::Base
 
   get "/message/:message_id/raw" do |message_id|
     content_type :text
-    message_id = message_id.to_i
-    message = @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    message = get_message_summary message_id
     @store.read message[:loc]
   end
 
