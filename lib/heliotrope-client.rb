@@ -30,6 +30,18 @@ class HeliotropeClient
     @resource["message/#{message_id}/part/#{part_id}"].get
   end
 
+  def labels
+    JSON.parse @resource["labels"].get
+  end
+
+  def prune_labels!
+    JSON.parse @resource["labels/prune"].post
+  end
+
+  def set_labels! thread_id, labels
+    JSON.parse @resource["thread/#{thread_id}/labels"].post :labels => labels.to_a.to_json
+  end
+
 private
 
   def in_ruby19_hell?

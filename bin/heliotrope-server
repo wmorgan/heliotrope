@@ -230,6 +230,19 @@ class HeliotropeServer < Sinatra::Base
     @index.all_labels.to_json
   end
 
+  post "/thread/:thread_id/labels" do |thread_id|
+    content_type :json
+    labels = params["labels"] or raise RequestError, "need a labels param: only have #{params.keys.inspect}"
+    labels = begin
+      Set.new(JSON.parse(labels))
+    rescue JSON::ParserError => e
+      raise RequestError, "cannot parse json: #{e.message}"
+    end
+
+    new_labels = @index.update_thread_labels thread_id, labels
+    new_labels.to_json
+  end
+
 private
 
   def load_actual_message offset
