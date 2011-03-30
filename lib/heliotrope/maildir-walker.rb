@@ -6,13 +6,15 @@ module Heliotrope
 class MaildirWalker
   def initialize(*dirs)
     @dirs = dirs
-    @files = nil
+    @files = @cur_message = nil
   end
+
+  attr_reader :cur_message
 
   def next_message
     @files ||= get_files
     return nil if @files.empty?
-    IO.read(@files.shift)
+    IO.read(@cur_message = @files.shift)
   end
 
   def done?

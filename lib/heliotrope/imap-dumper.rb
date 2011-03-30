@@ -26,6 +26,8 @@ class IMAPDumper
 
   BUF_SIZE = 100
 
+  def cur_message; "an imap message" end # lame
+
   def next_message
     @ids ||= begin
       puts "; downloading message ids..."

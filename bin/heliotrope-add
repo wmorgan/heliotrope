@@ -25,6 +25,7 @@ EOS
   opt :port, "Heliotrope server port", :default => 8042
   opt :dir, "Don't use the server. Instead, write directly to the store directory.", :type => String
   opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
+  opt :verbose, "Enable verbose output"
 
   banner <<EOS
 
@@ -99,6 +100,8 @@ begin
     break if opts.num_messages && num_scanned >= opts.num_messages
     rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
     num_scanned += 1
+
+    puts "; reading #{source.cur_message}" if opts.verbose
 
     if opts.dir
      begin
