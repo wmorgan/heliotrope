@@ -3,7 +3,10 @@ require 'rest_client'
 require 'json'
 
 class HeliotropeClient
+
+  attr_reader :url
   def initialize url
+    @url = url
     @resource = RestClient::Resource.new url
   end
 
