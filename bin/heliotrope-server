@@ -159,6 +159,10 @@ class HeliotropeServer < Sinatra::Base
     @index.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
   end
 
+  def get_threadinfo thread_id
+    @index.load_threadinfo(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+  end
+
   get "/message/:message_id.json" do |message_id|
     content_type :json
     message_id = message_id.to_i
@@ -169,6 +173,19 @@ class HeliotropeServer < Sinatra::Base
     result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
     result.to_json
   end
+
+  ## just the labels
+  get "/thread/:thread_id/labels.json" do |thread_id|
+    content_type :json
+    threadinfo = get_threadinfo thread_id
+    threadinfo[:labels].to_json
+  end
+
+  ## just the state
+  get "/thread/:thread_id/state.json" do |thread_id|
+    content_type :json
+    threadinfo = get_threadinfo thread_id
+    threadinfo[:state].to_json
   end
 
   get "/message/:message_id" do |message_id|
@@ -244,6 +261,21 @@ class HeliotropeServer < Sinatra::Base
 
     new_labels = @index.update_thread_labels thread_id, labels
     new_labels.to_json
+  end
+
+  post "/message/:message_id/state.json" do |message_id|
+    content_type :json
+    message = get_message_summary message_id # ensure it exists...
+
+    state = params["state"] or raise RequestError, "need a 'state' param"
+    state = begin
+      Set.new(JSON.parse(state))
+    rescue JSON::ParserError => e
+      raise RequestError, "cannot parse json: #{e.message}"
+    end
+
+    new_state = @index.update_message_state(message_id, state)
+    new_state.to_json
   end
 
 private

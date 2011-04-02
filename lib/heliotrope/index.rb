@@ -111,6 +111,7 @@ class Index
     [docid, threadid]
   end
 
+  ## returns the new message state
   def update_message_state docid, state
     state = Set.new(state) & MESSAGE_MUTABLE_STATE
 
@@ -118,7 +119,7 @@ class Index
     key = "state/#{docid}"
     old_mstate = load_set key
     new_mstate = (old_mstate - MESSAGE_MUTABLE_STATE) + state
-    return nil if new_mstate == old_mstate
+    return old_mstate if new_mstate == old_mstate
     write_set key, new_mstate
 
     ## load the threadinfo for this message
@@ -150,7 +151,7 @@ class Index
       write_thread_message_labels! threadinfo[:structure], new_tlabels
     end
 
-    [new_mstate, new_tstate, new_tlabels]
+    new_mstate
   end
 
   def update_thread_labels threadid, labels
