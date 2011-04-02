@@ -219,18 +219,18 @@ class HeliotropeServer < Sinatra::Base
     @store.read message[:loc]
   end
 
-  get "/labels" do
+  get "/labels.json" do
     content_type :json
     @index.all_labels.to_json
   end
 
-  post "/labels/prune" do
+  post "/labels/prune.json" do
     content_type :json
     @index.prune_labels!
     @index.all_labels.to_json
   end
 
-  post "/thread/:thread_id/labels" do |thread_id|
+  post "/thread/:thread_id/labels.json" do |thread_id|
     content_type :json
     labels = params["labels"] or raise RequestError, "need a labels param: only have #{params.keys.inspect}"
     labels = begin
@@ -282,8 +282,6 @@ private
     end
 
     s += "<div>" + link_to_raw(mid, "(view raw)") + "</div>"
-
-    #@index.update_message_state(message[:message_id], (message[:state] - ["unread"]))
     s
   end
 
