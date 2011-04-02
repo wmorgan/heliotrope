@@ -252,7 +252,9 @@ class HeliotropeServer < Sinatra::Base
 
   post "/thread/:thread_id/labels.json" do |thread_id|
     content_type :json
-    labels = params["labels"] or raise RequestError, "need a labels param: only have #{params.keys.inspect}"
+    thread = get_thread_summary thread_id # ensure it exists...
+
+    labels = params["labels"] or raise RequestError, "need a 'labels' param"
     labels = begin
       Set.new(JSON.parse(labels))
     rescue JSON::ParserError => e
