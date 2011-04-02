@@ -67,7 +67,7 @@ class HeliotropeServer < Sinatra::Base
     end.to_json
   end
 
-  def get_search_results
+  def get_query_from_params
     ## work around a rack (?) bug where quotes are omitted in queries like "hello bob"
     query = if env["rack.request.query_string"] =~ /\bq=(.+?)(&|$)/
       CGI.unescape $1
@@ -76,6 +76,11 @@ class HeliotropeServer < Sinatra::Base
     end
 
     raise RequestError, "need a query" unless query
+    query
+  end
+
+  def get_search_results
+    query = get_query_from_params
     start = (params["start"] || 0).to_i
     num = (params["num"] || DEFAULT_SEARCH_PAGE_SIZE).to_i
     num = DEFAULT_SEARCH_PAGE_SIZE if num <= 0
@@ -92,6 +97,7 @@ class HeliotropeServer < Sinatra::Base
       @index.get_some_results(start + num)[start, num]
     end
     elapsed = Time.now - startt
+    printf "search(#{query.parsed_query_s}, #{start}, #{num}) took %.1fms\n", (elapsed * 1000)
 
     ## remove this field from the results because it's not useful and can be large
     results.each { |r| r.delete :structure }
@@ -106,6 +112,19 @@ class HeliotropeServer < Sinatra::Base
     query, results, info = get_search_results
 
     results.to_json
+  end
+
+  get "/count.json" do
+    content_type :json
+    query = get_query_from_params
+    query = Heliotrope::Query.new "body", query
+    startt = Time.now
+    @index.set_query query
+    count = @index.count_results
+    elapsed = Time.now - startt
+    printf "count(#{query.parsed_query_s}) took %.1fms\n", (elapsed * 1000)
+    @search_state = nil # don't confuse this with the regular search stuff
+    { :count => count }.to_json
   end
 
   get "/search" do

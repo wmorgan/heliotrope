@@ -15,6 +15,10 @@ class HeliotropeClient
     get_json "search", :q => query, :start => start, :num => num
   end
 
+  def count query
+    get_json "count", :q => query
+  end
+
   def thread id; get_json("thread/#{id}") end
 
   def thread_labels id; get_json("thread/#{id}/labels") end
