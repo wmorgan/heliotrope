@@ -52,7 +52,7 @@ class Message
   ## we don't encode any non-text parts here, because json encoding of
   ## binary objects is crazy-talk, and because those are likely to be
   ## big anyways.
-  def to_json message_id, preferred_type
+  def to_h message_id, preferred_type
     parts = mime_parts(preferred_type).map do |type, fn, cid, content, size|
       if type =~ /^text\//
         { :type => type, :filename => fn, :cid => cid, :content => content, :here => true }
@@ -71,7 +71,7 @@ class Message
       :parts => parts,
       :message_id => message_id,
       :snippet => snippet
-    }.to_json
+    }
   end
 
   def recipients; ([to] + cc + bcc).flatten.compact end

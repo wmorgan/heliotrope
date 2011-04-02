@@ -165,7 +165,10 @@ class HeliotropeServer < Sinatra::Base
     messageinfo = get_message_summary message_id
     message = load_actual_message messageinfo[:loc]
 
-    message.to_json(message_id, params["mime_type_pref"] || "text/html")
+    ## merge the messageinfo (which has state, etc) with the actual content of the message
+    result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
+    result.to_json
+  end
   end
 
   get "/message/:message_id" do |message_id|
