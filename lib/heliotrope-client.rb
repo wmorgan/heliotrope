@@ -3,6 +3,7 @@ require 'rest_client'
 require 'json'
 
 class HeliotropeClient
+  class Error < StandardError; end
 
   attr_reader :url
   def initialize url
@@ -44,17 +45,28 @@ class HeliotropeClient
 private
 
   def get_json path, params={}
-    response = @resource[path + ".json"].get :params => params
-    response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
-    JSON.parse response
+    convert_errors do
+      response = @resource[path + ".json"].get :params => params
+      response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
+      JSON.parse response
+    end
   end
 
   def post_json path, params={ :please => "1" } # you need to have at least one param for RestClient to work... lame
-    response = @resource[path + ".json"].post params
-    response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
-    JSON.parse response
+    convert_errors do
+      response = @resource[path + ".json"].post params
+      response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
+      JSON.parse response
+    end
   end
 
+  def convert_errors
+    begin
+      yield
+    rescue SystemCallError, RestClient::Exception => e
+      raise Error, "#{e.message} (#{e.class})"
+    end
+  end
 
   def in_ruby19_hell?
     @in_ruby19_hell = "".respond_to?(:encoding) if @in_ruby19_hell.nil?
