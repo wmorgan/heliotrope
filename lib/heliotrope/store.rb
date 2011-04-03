@@ -32,6 +32,10 @@ class Store
     z = Zlib::GzipReader.new(buf)
     string = z.read
     z.close
+
+    ## these come back in the system encoding. GzipReader doesn't seem to take
+    ## an encoding spec. sigh. they need to be ascii.
+    string.force_encoding(Encoding::BINARY) if Decoder.in_ruby19_hell?
     string
   end
 end
