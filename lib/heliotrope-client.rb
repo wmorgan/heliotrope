@@ -5,6 +5,10 @@ require 'json'
 class HeliotropeClient
   class Error < StandardError; end
 
+  MESSAGE_MUTABLE_STATE = Set.new %w(starred unread deleted)
+  MESSAGE_IMMUTABLE_STATE = Set.new %w(attachment signed encrypted draft sent)
+  MESSAGE_STATE = MESSAGE_MUTABLE_STATE + MESSAGE_IMMUTABLE_STATE
+
   attr_reader :url
   def initialize url
     @url = url

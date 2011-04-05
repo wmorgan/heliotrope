@@ -31,11 +31,13 @@ class Index
   ## corresponds to a particular label, but labels are propagated at the thread
   ## level whereas state is not.
   MESSAGE_MUTABLE_STATE = Set.new %w(starred unread deleted)
-
   ## flags that are set per-message but are not modifiable by the user
   MESSAGE_IMMUTABLE_STATE = Set.new %w(attachment signed encrypted draft sent)
-
   MESSAGE_STATE = MESSAGE_MUTABLE_STATE + MESSAGE_IMMUTABLE_STATE
+  ## if you change any of those state things, be sure to update
+  ## heliotrope-client as well.
+
+
 
   SNIPPET_MAX_SIZE = 100 # chars
 
