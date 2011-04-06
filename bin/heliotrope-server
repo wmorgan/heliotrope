@@ -107,6 +107,11 @@ class HeliotropeServer < Sinatra::Base
     [query, results, { :start => start, :num => num, :elapsed => elapsed, :continued => continued }]
   end
 
+  get "/size.json" do
+    content_type :json
+    { :size => @index.size }.to_json
+  end
+
   get "/search.json" do
     content_type :json
     query, results, info = get_search_results

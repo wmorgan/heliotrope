@@ -39,6 +39,7 @@ class HeliotropeClient
 
   def labels; get_json("labels") end
   def ping; get_json("status") end
+  def size; get_json("size") end
 
   def prune_labels!; post_json("labels/prune") end
 
