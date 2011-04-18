@@ -185,11 +185,11 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def get_thread_summary thread_id
-    @index.load_thread_messageinfos(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+    @index.load_thread_messageinfos(thread_id) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
   end
 
   def get_threadinfo thread_id
-    @index.load_threadinfo(thread_id) or raise RequestError, "can't find thread #{thread_id.inspect}"
+    @index.load_threadinfo(thread_id) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
   end
 
   get "/message/:message_id.json" do |message_id|
@@ -220,10 +220,7 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
-    raise RequestError, "invalid message id" unless message_id > 0
-
-    message = get_message_summary message_id
-    raise RequestError, "invalid message id" unless message
+    message = get_message_summary(message_id) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
 
     begin
       threadinfo = @index.load_threadinfo(message[:thread_id])
@@ -237,7 +234,7 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def get_message_summary message_id
-    @index.load_messageinfo(message_id) or raise RequestError, "can't find message #{message_id.inspect}"
+    @index.load_messageinfo(message_id) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
   end
 
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
@@ -248,7 +245,7 @@ class HeliotropeServer < Sinatra::Base
       m = load_actual_message message[:loc]
       parts = m.mime_parts "text/html"
 
-      raise RequestError, "can't find that part" unless part_id >= 0 && part_id <= parts.size
+      raise Sinatra::NotFound, "can't find that part" unless part_id >= 0 && part_id <= parts.size
       type, fn, id, content = parts[part_id]
       if type =~ /^(\S+?);/
         type = $1
