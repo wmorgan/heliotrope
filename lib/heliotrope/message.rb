@@ -27,6 +27,7 @@ class Message
       #puts "warning: invalid date field #{@m.header['date']}"
       Time.at 0
     end
+
     @to = Person.many_from_string decode_header(@m.header["to"]) if @m.header["to"]
     @cc = @m.header["cc"] ? Person.many_from_string(decode_header(@m.header["cc"])) : []
     @bcc = @m.header["bcc"] ? Person.many_from_string(decode_header(@m.header["bcc"])) : []
@@ -36,18 +37,14 @@ class Message
     reply_to = munge_msgids decode_header(@m.header["in-reply-to"] || "")
     @refs += reply_to unless @refs.member? reply_to
 
-    #puts
-    #puts "From #{@from}"
-    #puts "To #{@to.inspect}"
-    #puts "Subj #{@subject}"
-    #puts "references: " + @m.header["references"].inspect
-    #puts "in-reply-to: " + @m.header["in-reply-to"].inspect
-    #puts "refs = " + @refs.inspect
+    ## this is sometimes useful for determining who was the actual target of the email,
+    ## in the case that someone has aliases
+    @recipient_email = @m.header["envelope-to"] || @m.header["x-original-to"] || @m.header["delivered-to"]
 
     self
   end
 
-  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs
+  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email
 
   ## we don't encode any non-text parts here, because json encoding of
   ## binary objects is crazy-talk, and because those are likely to be
@@ -65,6 +62,7 @@ class Message
       :to => to || [],
       :cc => cc || [],
       :bcc => bcc || [],
+      :recipient_email => recipient_email || "",
       :subject => subject,
       :date => date,
       :refs => refs,

@@ -37,8 +37,6 @@ class Index
   ## if you change any of those state things, be sure to update
   ## heliotrope-client as well.
 
-
-
   SNIPPET_MAX_SIZE = 100 # chars
 
   def initialize base_dir
