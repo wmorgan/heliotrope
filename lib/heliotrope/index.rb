@@ -440,8 +440,18 @@ private
 
     docids = thread_structure.flatten.select { |x| x > 0 }
     messages = docids.map { |id| load_hash("doc/#{id}") }
+    states = docids.map { |id| load_hash("state/#{id}") }
 
     participants = messages.map { |m| m[:from] }.ordered_uniq
+    unread_participants = messages.zip(states).map do |m, state|
+      if state.member?("unread")
+        m[:from]
+      end
+    end.compact.to_set
+
+    direct_recipients = messages.map { |m| m[:to] }.flatten.to_set
+    indirect_recipients = messages.map { |m| m[:cc] }.flatten.to_set
+
     first_message = messages.first # just take the root
     last_message = messages.max_by { |m| m[:date] }
 
@@ -449,6 +459,9 @@ private
       :subject => first_message[:subject],
       :date => last_message[:date],
       :participants => participants,
+      :unread_participants => unread_participants,
+      :direct_recipients => direct_recipients,
+      :indirect_recipients => indirect_recipients,
       :size => docids.size,
       :structure => thread_structure,
     }
@@ -482,7 +495,8 @@ private
       :subject => message.subject,
       :date => message.date,
       :from => message.from.to_s,
-      :to => message.recipients.map { |x| x.to_s },
+      :to => message.direct_recipients.map { |x| x.to_s },
+      :cc => message.indirect_recipients.map { |x| x.to_s },
       :has_attachment => message.has_attachment?,
     }.merge extra
 

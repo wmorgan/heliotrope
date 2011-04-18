@@ -28,7 +28,7 @@ class Message
       Time.at 0
     end
 
-    @to = Person.many_from_string decode_header(@m.header["to"]) if @m.header["to"]
+    @to = @m.header["to"] ? Person.many_from_string(decode_header(@m.header["to"])) : []
     @cc = @m.header["cc"] ? Person.many_from_string(decode_header(@m.header["cc"])) : []
     @bcc = @m.header["bcc"] ? Person.many_from_string(decode_header(@m.header["bcc"])) : []
     @subject = @m.header["subject"] ? decode_header(@m.header["subject"]) : ""
@@ -59,9 +59,9 @@ class Message
     end.compact
 
     { :from => from,
-      :to => to || [],
-      :cc => cc || [],
-      :bcc => bcc || [],
+      :to => to,
+      :cc => cc,
+      :bcc => bcc,
       :recipient_email => recipient_email || "",
       :subject => subject,
       :date => date,
@@ -72,7 +72,9 @@ class Message
     }
   end
 
-  def recipients; ([to] + cc + bcc).flatten.compact end
+  def direct_recipients; to end
+  def indirect_recipients; cc + bcc end
+  def recipients; direct_recipients + indirect_recipients end
 
   def indexable_text
     @indexable_text ||= begin
