@@ -211,7 +211,7 @@ class Index
   end
 
   def load_threadinfo threadid
-    h = load_thread threadid
+    h = load_thread(threadid) or return
     h.merge! :thread_id => threadid,
       :state => load_set("tstate/#{threadid}"),
       :labels => load_set("tlabels/#{threadid}"),
@@ -219,7 +219,9 @@ class Index
   end
 
   def load_messageinfo docid
-    h = load_hash "doc/#{docid}"
+    key = "doc/#{docid}"
+    return unless contains_key? key
+    h = load_hash key
     h.merge :state => load_set("state/#{docid}"),
       :thread_id => load_int("threadid/#{docid}"),
       :snippet => load_string("msnip/#{docid}"),
@@ -327,7 +329,11 @@ private
     children.inject([[doc, level]]) { |a, c| a + load_structured_messageinfo(c, level + 1) }
   end
 
-  def load_thread threadid; load_hash("thread/#{threadid}") end
+  def load_thread threadid
+    key = "thread/#{threadid}"
+    return unless contains_key? key
+    load_hash key
+  end
 
   ## given a single message, which contains a (partial) path from it to an
   ## ancestor (which itself may or may not be the root), build up the thread
