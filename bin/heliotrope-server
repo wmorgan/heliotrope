@@ -171,7 +171,6 @@ class HeliotropeServer < Sinatra::Base
   get "/thread/:thread_id" do |thread_id|
     content_type :html
 
-    thread_id = thread_id.to_i
     messageinfos = get_thread_summary thread_id
     first = messageinfos.find { |mi, level| mi[:subject] }[0]
 
@@ -185,11 +184,15 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def get_thread_summary thread_id
-    @index.load_thread_messageinfos(thread_id) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+    @index.load_thread_messageinfos(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
   end
 
   def get_threadinfo thread_id
-    @index.load_threadinfo(thread_id) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+    @index.load_threadinfo(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+  end
+
+  def get_message_summary message_id
+    @index.load_messageinfo(message_id.to_i) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
   end
 
   get "/message/:message_id.json" do |message_id|
