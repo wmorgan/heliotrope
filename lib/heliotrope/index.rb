@@ -151,6 +151,12 @@ class Index
       write_thread_message_labels! threadinfo[:structure], new_tlabels
     end
 
+    ## recalc the unread participants
+    docids = threadinfo[:structure].flatten.select { |x| x > 0 }
+    messages = docids.map { |id| load_hash("doc/#{id}") }
+    states = docids.map { |id| load_hash("state/#{id}") }
+
+    write_unread_participants! threadid, messages, states
     new_mstate
   end
 
@@ -215,7 +221,8 @@ class Index
     h.merge! :thread_id => threadid,
       :state => load_set("tstate/#{threadid}"),
       :labels => load_set("tlabels/#{threadid}"),
-      :snippet => load_string("tsnip/#{threadid}")
+      :snippet => load_string("tsnip/#{threadid}"),
+      :unread_participants => load_set("turps/#{threadid}")
   end
 
   def load_messageinfo docid
@@ -277,6 +284,13 @@ class Index
   end
 
 private
+
+  def write_unread_participants! threadid, messages, states
+    unread_participants = messages.zip(states).map do |m, state|
+      m[:from] if state.member?("unread")
+    end.compact.to_set
+    write_set "turps/#{threadid}", unread_participants
+  end
 
   def add_labels_to_labellist! labels
     key = "labellist"
@@ -443,12 +457,6 @@ private
     states = docids.map { |id| load_hash("state/#{id}") }
 
     participants = messages.map { |m| m[:from] }.ordered_uniq
-    unread_participants = messages.zip(states).map do |m, state|
-      if state.member?("unread")
-        m[:from]
-      end
-    end.compact.to_set
-
     direct_recipients = messages.map { |m| m[:to] }.flatten.to_set
     indirect_recipients = messages.map { |m| m[:cc] }.flatten.to_set
 
@@ -459,7 +467,6 @@ private
       :subject => first_message[:subject],
       :date => last_message[:date],
       :participants => participants,
-      :unread_participants => unread_participants,
       :direct_recipients => direct_recipients,
       :indirect_recipients => indirect_recipients,
       :size => docids.size,
@@ -470,6 +477,9 @@ private
     write_set "tlabels/#{threadid}", labels
     write_set "tstate/#{threadid}", state
     write_string "tsnip/#{threadid}", snippet
+
+    write_unread_participants! threadid, messages, states
+
     threadinfo
   end
 
