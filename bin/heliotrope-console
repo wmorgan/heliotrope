@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'trollop'
+require 'whistlepig'
+require 'irb'
+
+require "heliotrope"
+
+module IRB
+  def IRB.start_with_binding binding
+    IRB.setup __FILE__
+    w = WorkSpace.new binding
+    irb = Irb.new w
+    @CONF[:MAIN_CONTEXT] = irb.context
+    irb.eval_input
+  end
+end
+
+opts = Trollop::options do
+  banner <<EOS
+Usage: #{$0} [options]
+
+Where options include:
+EOS
+  opt :dir, "Base directory for all index files", :default => "."
+end
+
+include Heliotrope
+index = Index.new opts.dir
+store = Store.new File.join(opts.dir, "messages")
+
+puts <<EOS
+Heliotrope console started.
+
+'index' is the index
+'store' is the store
+
+Search:
+  q = Query.new "body", "hello"
+  index.set_query q
+  results = index.get_some_results 5
+
+The results are an array of threadinfo hashes.
+Look at a single threadinfo:
+  t = results.first
+  t[:subject]
+  t[:date]
+
+Get the messageinfos for a thread:
+  mi = index.load_thread_messageinfos t[:thread_id]
+
+The messageinfos are nested to represent the thread structure.
+Look at a single messageinfo:
+  m = mi.flatten.first
+  m[:from]
+  m[:date]
+
+To load the actual content of a message, we go to the store.
+  body = store.read m[:loc]
+
+Have fun and be safe!
+
+Index contains #{index.size} messages.
+EOS
+
+begin
+  IRB.start_with_binding binding
+rescue Interrupt
+  puts "bye!"
+end
