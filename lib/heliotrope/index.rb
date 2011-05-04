@@ -510,11 +510,6 @@ private
     messageinfo
   end
 
-  def in_ruby19_hell?
-    @in_ruby19_hell = "".respond_to?(:encoding) if @in_ruby19_hell.nil?
-    @in_ruby19_hell
-  end
-
   ## storing stuff is tricky
   ##
   ## strings can be stored directly but they MUST be marked (via
@@ -526,11 +521,15 @@ private
   ## encodings will be preserved. HOWEVER, we need to recursively find all
   ## strings and mark them as utf-8 anyways, since they might've been
   ## marshalled by a 1.8 process, in which case they will come back as binary.
+  ##
+  ## once the entire world is safely in 1.9 and we never have a chance of
+  ## someone first using 1.8, then switching to 1.9, we can remove some of this
+  ## sillyness.
 
-  STORE_ENCODING = Encoding::UTF_8 if defined?(Encoding)
+  STORE_ENCODING = Encoding::UTF_8 if Decoder.in_ruby19_hell?
 
   def munge o
-    return o unless in_ruby19_hell?
+    return o unless Decoder.in_ruby19_hell?
     case o
     when String; o.dup.force_encoding STORE_ENCODING
     when Hash; o.each { |k, v| o[k] = munge(v) }
@@ -541,7 +540,7 @@ private
   end
 
   def protect_string s
-    if in_ruby19_hell?
+    if Decoder.in_ruby19_hell?
       s.force_encoding "binary"
     else
       s
