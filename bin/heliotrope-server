@@ -162,6 +162,14 @@ class HeliotropeServer < Sinatra::Base
     end
   end
 
+  ## thread info object
+  get "/thread/:thread_id/info.json" do |thread_id|
+    content_type :json
+    threadinfo = get_threadinfo thread_id
+    threadinfo.to_json
+  end
+
+  ## messages in the thread
   get "/thread/:thread_id.json" do |thread_id|
     content_type :json
     messageinfos = get_thread_summary thread_id
@@ -206,20 +214,6 @@ class HeliotropeServer < Sinatra::Base
     result.to_json
   end
 
-  ## just the labels
-  get "/thread/:thread_id/labels.json" do |thread_id|
-    content_type :json
-    threadinfo = get_threadinfo thread_id
-    threadinfo[:labels].to_json
-  end
-
-  ## just the state
-  get "/thread/:thread_id/state.json" do |thread_id|
-    content_type :json
-    threadinfo = get_threadinfo thread_id
-    threadinfo[:state].to_json
-  end
-
   get "/message/:message_id" do |message_id|
     content_type :html
     message_id = message_id.to_i
@@ -234,10 +228,6 @@ class HeliotropeServer < Sinatra::Base
     rescue Heliotrope::InvalidMessageError => e
       raise RequestError, "can't parse message #{message_id.inspect}: #{e.message}"
     end
-  end
-
-  def get_message_summary message_id
-    @index.load_messageinfo(message_id) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
   end
 
   get "/message/:message_id/part/:part_id" do |message_id, part_id|
