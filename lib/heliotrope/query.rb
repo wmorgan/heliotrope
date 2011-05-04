@@ -21,6 +21,10 @@ class Query
   def and other; Query.new(nil, nil, @whistlepig_q.and(other)) end
 
   def original_query_s; @whistlepig_q.query end
-  def parsed_query_s; @whistlepig_q.to_s end
+  def parsed_query_s
+    s = @whistlepig_q.to_s
+    s.force_encoding(Encoding::UTF_8) if Decoder.in_ruby19_hell?
+    s
+  end
 end
 end
