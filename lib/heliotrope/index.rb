@@ -62,6 +62,8 @@ class Index
     @index_time = @store_time = @thread_time = 0
   end
 
+  def version; 2 end
+
   def add_message message, state=[], labels=[], extra={}
     key = "docid/#{message.msgid}"
     if contains_key? key
