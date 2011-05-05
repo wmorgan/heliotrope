@@ -37,14 +37,21 @@ class Message
     reply_to = munge_msgids decode_header(@m.header["in-reply-to"] || "")
     @refs += reply_to unless @refs.member? reply_to
 
-    ## this is sometimes useful for determining who was the actual target of the email,
-    ## in the case that someone has aliases
+    ## various other headers that you don't think we will need until we
+    ## actually need them.
+
+    ## this is sometimes useful for determining who was the actual target of
+    ## the email, in the case that someone has aliases
     @recipient_email = @m.header["envelope-to"] || @m.header["x-original-to"] || @m.header["delivered-to"]
+
+    @list_subscribe = @m.header["list-subscribe"]
+    @list_unsubscribe = @m.header["list-unsubscribe"]
+    @list_post = @m.header["list-post"] || @m.header["x-mailing-list"]
 
     self
   end
 
-  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email
+  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email, :list_post, :list_unsubscribe, :list_subscribe
 
   ## we don't encode any non-text parts here, because json encoding of
   ## binary objects is crazy-talk, and because those are likely to be
@@ -62,13 +69,17 @@ class Message
       :to => to,
       :cc => cc,
       :bcc => bcc,
-      :recipient_email => recipient_email || "",
       :subject => subject,
       :date => date,
       :refs => refs,
       :parts => parts,
       :message_id => message_id,
-      :snippet => snippet
+      :snippet => snippet,
+
+      :recipient_email => recipient_email,
+      :list_post => list_post,
+      :list_subscribe => list_subscribe,
+      :list_unsubscribe => list_unsubscribe,
     }
   end
 
