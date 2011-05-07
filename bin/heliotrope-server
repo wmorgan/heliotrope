@@ -301,6 +301,13 @@ class HeliotropeServer < Sinatra::Base
     new_state.to_json
   end
 
+  post "/message.json" do
+    body = params["body"] or raise RequestError, "need a 'body' param"
+    puts body
+
+    {:status => "ok"}.to_json
+  end
+
 private
 
   def load_actual_message offset

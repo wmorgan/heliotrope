@@ -30,6 +30,10 @@ class HeliotropeClient
     get_json "message/#{id}", :mime_type_pref => preferred_mime_type
   end
 
+  def send_message body
+    post_json "message", :body => body
+  end
+
   def message_part message_id, part_id
     ## this is not a json blob, but a binary attachment
     @resource["message/#{message_id}/part/#{part_id}"].get
