@@ -80,6 +80,8 @@ class Message
       :list_post => list_post,
       :list_subscribe => list_subscribe,
       :list_unsubscribe => list_unsubscribe,
+
+      :email_message_id => @msgid,
     }
   end
 
