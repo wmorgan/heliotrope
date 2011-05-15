@@ -35,8 +35,13 @@ class HeliotropeClient
   end
 
   def message_part message_id, part_id
-    ## this is not a json blob, but a binary attachment
+    ## not a json blob, but a binary region
     @resource["message/#{message_id}/part/#{part_id}"].get
+  end
+
+  def raw_message message_id
+    ## not a json blob, but a binary region
+    @resource["message/#{message_id}/raw"].get
   end
 
   def labels; get_json("labels") end
