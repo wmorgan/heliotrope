@@ -53,6 +53,10 @@ class HeliotropeServer < Sinatra::Base
 
     begin
       rawbody = params["message"] or raise RequestError, "need a message"
+      labels = JSON.parse(params["labels"] || "[]")
+      state = JSON.parse(params["state"] || "[]")
+      extra = JSON.parse(params["extra"] || "{}")
+
       rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
 
       message = Heliotrope::Message.new(rawbody).parse!
@@ -61,7 +65,8 @@ class HeliotropeServer < Sinatra::Base
         { :response => :ok, :status => :seen }
       else
         loc = @store.add rawbody
-        doc_id, thread_id = @index.add_message message, %w(unread), %w(inbox), :loc => loc
+        extra.merge! :loc => loc
+        doc_id, thread_id = @index.add_message message, state, labels, extra
         { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
       end
     rescue Heliotrope::InvalidMessageError => e

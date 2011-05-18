@@ -117,7 +117,7 @@ begin
         num_bad += 1
       end
     else
-      response = RestClient.post server_url, :message => rawbody
+      response = RestClient.post server_url, :message => rawbody, :state => %w(unread).to_json, :labels => %w(inbox).to_json
       response = JSON.parse(response)
 
       if response["response"] == "ok"
