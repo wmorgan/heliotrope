@@ -290,6 +290,18 @@ class HeliotropeServer < Sinatra::Base
     new_labels.to_json
   end
 
+  post "/thread/:thread_id/state.json" do |thread_id|
+    content_type :json
+
+    state = params["state"] or raise RequestError, "need a 'state' param"
+    state = parse_json_set state
+
+    thread = get_thread_summary thread_id # ensure it exists...
+    @index.update_thread_state thread_id, state
+
+    get_threadinfo(thread_id).to_json
+  end
+
   post "/message/:message_id/state.json" do |message_id|
     content_type :json
 

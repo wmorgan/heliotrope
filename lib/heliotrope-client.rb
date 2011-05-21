@@ -63,6 +63,10 @@ class HeliotropeClient
     post_json "message/#{message_id}/state", :state => state.to_json
   end
 
+  def set_thread_state! thread_id, state
+    post_json "thread/#{thread_id}/state", :state => state.to_json
+  end
+
 private
 
   def get_json path, params={}
