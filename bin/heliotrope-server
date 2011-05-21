@@ -121,9 +121,12 @@ class HeliotropeServer < Sinatra::Base
 
   get "/search.json" do
     content_type :json
-    query, results, info = get_search_results
-
-    results.to_json
+    begin
+      query, results, info = get_search_results
+      { "status" => "ok", "results" => results }
+    rescue Heliotrope::Query::ParseError => e
+      { "status" => "error", "message" => e.message }
+    end.to_json
   end
 
   get "/count.json" do

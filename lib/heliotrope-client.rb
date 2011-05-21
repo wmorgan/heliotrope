@@ -16,7 +16,12 @@ class HeliotropeClient
   end
 
   def search query, num=20, start=0
-    get_json "search", :q => query, :start => start, :num => num
+    v = get_json "search", :q => query, :start => start, :num => num
+    case v["status"]
+      when "ok"; v["results"]
+      when "error"; raise Error, v["message"]
+      else raise Error, "invalid response: #{v.inspect[0..20]}"
+    end
   end
 
   def count query
