@@ -281,30 +281,22 @@ class HeliotropeServer < Sinatra::Base
 
   post "/thread/:thread_id/labels.json" do |thread_id|
     content_type :json
-    thread = get_thread_summary thread_id # ensure it exists...
 
     labels = params["labels"] or raise RequestError, "need a 'labels' param"
-    labels = begin
-      Set.new(JSON.parse(labels))
-    rescue JSON::ParserError => e
-      raise RequestError, "cannot parse json: #{e.message}"
-    end
+    labels = parse_json_set labels
 
+    thread = get_thread_summary thread_id # ensure it exists...
     new_labels = @index.update_thread_labels thread_id, labels
     new_labels.to_json
   end
 
   post "/message/:message_id/state.json" do |message_id|
     content_type :json
-    message = get_message_summary message_id # ensure it exists...
 
     state = params["state"] or raise RequestError, "need a 'state' param"
-    state = begin
-      Set.new(JSON.parse(state))
-    rescue JSON::ParserError => e
-      raise RequestError, "cannot parse json: #{e.message}"
-    end
+    state = parse_json_set state
 
+    message = get_message_summary message_id # ensure it exists...
     new_state = @index.update_message_state(message_id, state)
     new_state.to_json
   end
@@ -317,6 +309,14 @@ class HeliotropeServer < Sinatra::Base
   end
 
 private
+
+  def parse_json_set val
+    begin
+      Set.new JSON.parse(val)
+    rescue JSON::ParserError => e
+      raise RequestError, "cannot parse json [#{val.inspect}]: #{e.message}"
+    end
+  end
 
   def load_actual_message offset
     rawbody = @store.read offset
