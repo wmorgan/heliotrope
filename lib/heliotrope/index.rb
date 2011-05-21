@@ -117,49 +117,32 @@ class Index
   def update_message_state docid, state
     state = Set.new(state) & MESSAGE_MUTABLE_STATE
 
-    ## update message state
-    key = "state/#{docid}"
-    old_mstate = load_set key
-    new_mstate = (old_mstate - MESSAGE_MUTABLE_STATE) + state
-    return old_mstate if new_mstate == old_mstate
-    write_set key, new_mstate
+    changed, new_state = really_update_message_state docid, state
+    if changed
+      threadid = load_int "threadid/#{docid}"
+      threadinfo = load_hash "thread/#{threadid}"
+      rebuild_all_thread_metadata threadid, threadinfo
+    end
 
-    ## load the threadinfo for this message
-    threadid = load_int "threadid/#{docid}"
+    new_state
+  end
+
+  def update_thread_state threadid, state
     threadinfo = load_hash "thread/#{threadid}"
 
-    ## recalc thread snippet
-    key = "tsnip/#{threadid}"
-    old_snippet = load_string key
-    new_snippet = calc_thread_snippet threadinfo[:structure]
-    if old_snippet != new_snippet
-      write_string key, new_snippet
+    docids = threadinfo[:structure].flatten.select { |id| id > 0 }
+
+    changed = false
+    docids.each do |docid|
+      this_changed, _ = really_update_message_state docid, state
+      changed ||= this_changed
     end
 
-    ## recalc thread state and labels
-    old_tstate = load_set "tstate/#{threadid}"
-    new_tstate = merge_thread_state threadinfo[:structure]
-    new_tlabels = nil
-
-    if new_tstate != old_tstate
-      write_set "tstate/#{threadid}", new_tstate
-
-      ## update thread labels
-      key = "tlabels/#{threadid}"
-      old_tlabels = load_set key
-      new_tlabels = (old_tlabels - MESSAGE_MUTABLE_STATE) + new_tstate
-      write_set key, new_tlabels
-
-      write_thread_message_labels! threadinfo[:structure], new_tlabels
+    if changed
+      threadinfo = rebuild_all_thread_metadata threadid, threadinfo
+    else
+      load_set "tstate/#{threadid}"
     end
-
-    ## recalc the unread participants
-    docids = threadinfo[:structure].flatten.select { |x| x > 0 }
-    messages = docids.map { |id| load_hash("doc/#{id}") }
-    states = docids.map { |id| load_hash("state/#{id}") }
-
-    write_unread_participants! threadid, messages, states
-    new_mstate
   end
 
   def update_thread_labels threadid, labels
@@ -286,6 +269,58 @@ class Index
   end
 
 private
+
+  def really_update_message_state docid, state
+    ## update message state
+    key = "state/#{docid}"
+    old_mstate = load_set key
+    new_mstate = (old_mstate - MESSAGE_MUTABLE_STATE) + state
+
+    changed = new_mstate != old_mstate
+    write_set key, new_mstate if changed
+    [changed, new_mstate]
+  end
+
+  ## rebuild snippet, labels, read/unread participants, etc.  for a
+  ## thread. useful if something about one of the thread's messages has
+  ## changed.
+  ##
+  ## returns the new thread state
+  def rebuild_all_thread_metadata threadid, threadinfo
+    ## recalc thread snippet
+    key = "tsnip/#{threadid}"
+    old_snippet = load_string key
+    new_snippet = calc_thread_snippet threadinfo[:structure]
+    if old_snippet != new_snippet
+      write_string key, new_snippet
+    end
+
+    ## recalc thread state and labels
+    old_tstate = load_set "tstate/#{threadid}"
+    new_tstate = merge_thread_state threadinfo[:structure]
+    new_tlabels = nil
+
+    if new_tstate != old_tstate
+      write_set "tstate/#{threadid}", new_tstate
+
+      ## update thread labels
+      key = "tlabels/#{threadid}"
+      old_tlabels = load_set key
+      new_tlabels = (old_tlabels - MESSAGE_MUTABLE_STATE) + new_tstate
+      write_set key, new_tlabels
+
+      write_thread_message_labels! threadinfo[:structure], new_tlabels
+    end
+
+    ## recalc the unread participants
+    docids = threadinfo[:structure].flatten.select { |x| x > 0 }
+    messages = docids.map { |id| load_hash("doc/#{id}") }
+    states = docids.map { |id| load_hash("state/#{id}") }
+
+    write_unread_participants! threadid, messages, states
+
+    new_tstate
+  end
 
   def write_unread_participants! threadid, messages, states
     unread_participants = messages.zip(states).map do |m, state|
