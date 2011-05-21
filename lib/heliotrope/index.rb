@@ -28,8 +28,8 @@ class Index
   QUERY_FILTER = Whistlepig::Query.new "", "-~deleted" # always filter out deleted messages
 
   ## these are things that can be set on a per-message basis. each one
-  ## corresponds to a particular label, but labels are propagated at the thread
-  ## level whereas state is not.
+  ## corresponds to a particular label, but labels are propagated at the
+  ## thread level whereas state is not.
   MESSAGE_MUTABLE_STATE = Set.new %w(starred unread deleted)
   ## flags that are set per-message but are not modifiable by the user
   MESSAGE_IMMUTABLE_STATE = Set.new %w(attachment signed encrypted draft sent)
