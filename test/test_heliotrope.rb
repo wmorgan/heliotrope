@@ -24,6 +24,8 @@ class HeliotropeTest < ::Test::Unit::TestCase
         :subject => "test message",
         :date => Time.now,
         :indexable_text => "i love mice",
+        :direct_recipients => [],
+        :indirect_recipients => [],
         :snippet => "i love mice",
         :refs => []
       }.merge opts
