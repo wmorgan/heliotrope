@@ -128,8 +128,9 @@ class Index
   end
 
   def update_thread_state threadid, state
-    threadinfo = load_hash "thread/#{threadid}"
+    state = Set.new(state) & MESSAGE_MUTABLE_STATE
 
+    threadinfo = load_hash "thread/#{threadid}"
     docids = threadinfo[:structure].flatten.select { |id| id > 0 }
 
     changed = false
