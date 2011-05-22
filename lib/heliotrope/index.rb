@@ -25,8 +25,6 @@ end
 
 module Heliotrope
 class Index
-  QUERY_FILTER = Whistlepig::Query.new "", "-~deleted" # always filter out deleted messages
-
   ## these are things that can be set on a per-message basis. each one
   ## corresponds to a particular label, but labels are propagated at the
   ## thread level whereas state is not.
@@ -169,7 +167,7 @@ class Index
 
   def set_query query
     @index.teardown_query @query.whistlepig_q if @query # new query, drop old one
-    @query = query.and QUERY_FILTER
+    @query = query
     @index.setup_query @query.whistlepig_q
     @seen_threads = {}
   end
