@@ -286,8 +286,9 @@ class HeliotropeServer < Sinatra::Base
     labels = parse_json_set labels
 
     thread = get_thread_summary thread_id # ensure it exists...
-    new_labels = @index.update_thread_labels thread_id, labels
-    new_labels.to_json
+    @index.update_thread_labels thread_id, labels
+
+    get_threadinfo(thread_id).to_json
   end
 
   post "/thread/:thread_id/state.json" do |thread_id|
