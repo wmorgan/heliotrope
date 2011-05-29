@@ -6,15 +6,19 @@ module Heliotrope
 class MaildirWalker
   def initialize(*dirs)
     @dirs = dirs
-    @files = @cur_message = nil
   end
+
+  def load!; @files = get_files end
 
   attr_reader :cur_message
 
   def next_message
-    @files ||= get_files
     return nil if @files.empty?
     IO.read(@cur_message = @files.shift)
+  end
+
+  def skip! num
+    @files = @files[num .. -1]
   end
 
   def done?
@@ -35,6 +39,7 @@ private
     file_dates = files.map { |fn| get_date_in_file fn }
     puts "; sorting..."
     files = files.zip(file_dates).sort_by { |fn, date| date }
+    puts "; ready"
     files.map { |fn, date| fn }
   end
 

@@ -25,6 +25,7 @@ EOS
   opt :port, "Heliotrope server port", :default => 8042
   opt :dir, "Don't use the server. Instead, write directly to the store directory.", :type => String
   opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
+  opt :num_skip, "Skip this many many messages and then start indexing", :type => Integer, :short => "k"
   opt :verbose, "Enable verbose output"
 
   banner <<EOS
@@ -95,13 +96,18 @@ num_scanned = num_indexed = num_bad = num_seen = 0
 startt = lastt = Time.now
 
 begin
+  puts "; loading mail..."
+  source.load!
+
+  source.skip! opts.num_skip if opts.num_skip
   until source.done?
     rawbody = source.next_message
     break if opts.num_messages && num_scanned >= opts.num_messages
-    rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
     num_scanned += 1
 
     puts "; reading #{source.cur_message}" if opts.verbose
+
+    rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
 
     if opts.dir
      begin

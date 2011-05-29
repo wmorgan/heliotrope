@@ -12,30 +12,32 @@ class IMAPDumper
     ssl = opts.member?(:ssl) ? opts[:ssl] : true
     port = opts[:port] || (ssl ? 993 : 143)
     folder = opts[:folder] || "inbox"
+  end
 
+  def cur_message; "an imap message" end # lame
+
+  BUF_SIZE = 100
+
+  def load!
     puts "; connecting to #{host}:#{port}..."
     @imap = Net::IMAP.new host, port, :ssl => ssl
     puts "; logging in as #{username}..."
     @imap.login username, password
     puts "; selecting #{folder}..."
     @imap.select folder
-    puts "; ready!"
-    @ids = nil
+    puts "; downloading message ids..."
+    @ids = @imap.search(["NOT", "DELETED"])
+    puts "; got #{@ids.size}"
+
     @msgs = []
   end
 
-  BUF_SIZE = 100
-
-  def cur_message; "an imap message" end # lame
+  def skip! num
+    @ids = @ids[num .. -1]
+    @msgs = []
+  end
 
   def next_message
-    @ids ||= begin
-      puts "; downloading message ids..."
-      ids = @imap.search(["NOT", "DELETED"])
-      puts "; got #{ids.size}"
-      ids
-    end
-
     if @msgs.empty?
       ids = @ids.shift BUF_SIZE
       query = ids.first .. ids.last

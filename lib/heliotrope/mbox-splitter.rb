@@ -29,6 +29,8 @@ class MboxSplitter
     @stream.seek opts[:start_offset] if opts[:start_offset]
   end
 
+  def load!; end # nothing to do
+
   attr_reader :cur_message
 
   def next_message
@@ -41,6 +43,10 @@ class MboxSplitter
       end
     end
     message
+  end
+
+  def skip! num
+    num.times { next_message } # lame
   end
 
   def eof?; @stream.eof? end
