@@ -310,8 +310,9 @@ class HeliotropeServer < Sinatra::Base
     state = parse_json_set state
 
     message = get_message_summary message_id # ensure it exists...
-    new_state = @index.update_message_state(message_id, state)
-    new_state.to_json
+    @index.update_message_state(message_id, state)
+
+    get_message_summary(message_id).to_json
   end
 
   post "/message.json" do
