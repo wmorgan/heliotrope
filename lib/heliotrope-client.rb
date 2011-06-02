@@ -32,7 +32,7 @@ class HeliotropeClient
   end
 
   def send_message message, opts={}
-    post_json "message/send", opts.merge(:message => message)
+    post_json "message/send", :message => message, :labels => (opts[:labels] || []).to_json
   end
 
   def message_part message_id, part_id
