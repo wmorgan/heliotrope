@@ -17,18 +17,14 @@ class HeliotropeClient
 
   def search query, num=20, start=0
     v = get_json "search", :q => query, :start => start, :num => num
-    case v["status"]
-      when "ok"; v["results"]
-      when "error"; raise Error, v["message"]
-      else raise Error, "invalid response: #{v.inspect[0..20]}"
-    end
+    v["results"]
   end
 
   def count query
     get_json "count", :q => query
   end
 
-  def thread id; get_json("thread/#{id}") end
+  def thread id; get_json("thread/#{id}")["messageinfos"] end
   def threadinfo id; get_json("thread/#{id}/info") end
 
   def message id, preferred_mime_type="text/plain"
@@ -70,7 +66,7 @@ class HeliotropeClient
 private
 
   def get_json path, params={}
-    convert_errors do
+    handle_errors do
       response = @resource[path + ".json"].get :params => params
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
@@ -78,17 +74,23 @@ private
   end
 
   def post_json path, params={ :please => "1" } # you need to have at least one param for RestClient to work... lame
-    convert_errors do
+    handle_errors do
       response = @resource[path + ".json"].post params
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
   end
 
-  def convert_errors
+  def handle_errors
     begin
-      yield
-    rescue SystemCallError, RestClient::Exception => e
+      v = yield
+      raise Error, "invalid response: #{v.inspect[0..200]}" unless v.is_a?(Hash)
+      case v["response"]
+        when "ok"; v
+        when "error"; raise Error, v["message"]
+        else raise Error, "invalid response: #{v.inspect[0..200]}"
+      end
+    rescue SystemCallError, RestClient::Exception, JSON::ParserError => e
       raise Error, "#{e.message} (#{e.class})"
     end
   end

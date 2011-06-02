@@ -113,7 +113,7 @@ class Message
   SIGNATURE_ATTACHMENT_TYPE = %r{application\/pgp-signature\b}
 
   def snippet
-    v = mime_parts("text/plain").each do |type, fn, id, content|
+    mime_parts("text/plain").each do |type, fn, id, content|
       if (type =~ /text\//) && fn.nil?
         head = content[0, 1000].split "\n"
         head.shift while !head.empty? && head.first.empty? || head.first =~ /^\s*>|\-\-\-|(wrote|said):\s*$/

@@ -44,7 +44,8 @@ class HeliotropeServer < Sinatra::Base
 
   get "/info.json" do
     content_type :json
-    { :status => "up",
+    { :response => :ok,
+      :status => :up,
       :index_version => @index.version
     }.to_json
   end
@@ -72,8 +73,7 @@ class HeliotropeServer < Sinatra::Base
         add_message message, rawbody, labels, state + ["sent"], extra
       end
     rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
-      puts "error response"
-      { :response => :error, :error_message => e.message }
+      { :response => :error, :message => e.message }
     end.to_json
   end
 
@@ -105,11 +105,11 @@ class HeliotropeServer < Sinatra::Base
       if @index.contains_msgid? message.msgid
         { :response => :ok, :status => :seen }
       else
-        add_message message, labels, state, extra
+        add_message message, rawbody, labels, state, extra
       end
     rescue Heliotrope::InvalidMessageError => e
       { :response => :error, :error_message => e.message }
-    end
+    end.to_json
   end
 
   def raw_body_to_message rawbody
@@ -117,11 +117,11 @@ class HeliotropeServer < Sinatra::Base
     Heliotrope::Message.new(rawbody).parse!
   end
 
-  def add_message message, labels, state, extra
+  def add_message message, rawbody, labels, state, extra
     loc = @store.add rawbody
     extra.merge! :loc => loc
     doc_id, thread_id = @index.add_message message, state, labels, extra
-    { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }.to_json
+    { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
   end
 
   def get_query_from_params
@@ -166,16 +166,16 @@ class HeliotropeServer < Sinatra::Base
 
   get "/size.json" do
     content_type :json
-    { :size => @index.size }.to_json
+    { :response => :ok, :size => @index.size }.to_json
   end
 
   get "/search.json" do
     content_type :json
     begin
       query, results, info = get_search_results
-      { "status" => "ok", "results" => results }
+      { :response => :ok, :results => results }
     rescue Heliotrope::Query::ParseError => e
-      { "status" => "error", "message" => e.message }
+      { :response => :error, :message => e.message }
     end.to_json
   end
 
@@ -189,7 +189,7 @@ class HeliotropeServer < Sinatra::Base
     elapsed = Time.now - startt
     printf "count(#{query.parsed_query_s}) took %.1fms\n", (elapsed * 1000)
     @search_state = nil # don't confuse this with the regular search stuff
-    { :count => count }.to_json
+    { :response => :ok, :count => count }.to_json
   end
 
   get "/search" do
@@ -226,14 +226,14 @@ class HeliotropeServer < Sinatra::Base
   get "/thread/:thread_id/info.json" do |thread_id|
     content_type :json
     threadinfo = get_threadinfo thread_id
-    threadinfo.to_json
+    threadinfo.merge(:response => :ok).to_json
   end
 
   ## messages in the thread
   get "/thread/:thread_id.json" do |thread_id|
     content_type :json
     messageinfos = get_thread_summary thread_id
-    messageinfos.to_json
+    { :messageinfos => messageinfos, :response => :ok }.to_json
   end
 
   get "/thread/:thread_id" do |thread_id|
@@ -271,7 +271,7 @@ class HeliotropeServer < Sinatra::Base
 
     ## merge the messageinfo (which has state, etc) with the actual content of the message
     result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
-    result.to_json
+    result.merge(:response => :ok).to_json
   end
 
   get "/message/:message_id" do |message_id|
@@ -320,13 +320,13 @@ class HeliotropeServer < Sinatra::Base
 
   get "/labels.json" do
     content_type :json
-    @index.all_labels.to_json
+    { :labels => @index.all_labels, :response => :ok }.to_json
   end
 
   post "/labels/prune.json" do
     content_type :json
     @index.prune_labels!
-    @index.all_labels.to_json
+    { :labels => @index.all_labels, :response => :ok }.to_json
   end
 
   post "/thread/:thread_id/labels.json" do |thread_id|
@@ -338,7 +338,7 @@ class HeliotropeServer < Sinatra::Base
     thread = get_thread_summary thread_id # ensure it exists...
     @index.update_thread_labels thread_id, labels
 
-    get_threadinfo(thread_id).to_json
+    get_threadinfo(thread_id).merge(:response => :ok).to_json
   end
 
   post "/thread/:thread_id/state.json" do |thread_id|
@@ -350,7 +350,7 @@ class HeliotropeServer < Sinatra::Base
     thread = get_thread_summary thread_id # ensure it exists...
     @index.update_thread_state thread_id, state
 
-    get_threadinfo(thread_id).to_json
+    get_threadinfo(thread_id).merge(:response => :ok).to_json
   end
 
   post "/message/:message_id/state.json" do |message_id|
@@ -362,7 +362,7 @@ class HeliotropeServer < Sinatra::Base
     message = get_message_summary message_id # ensure it exists...
     @index.update_message_state(message_id, state)
 
-    get_message_summary(message_id).to_json
+    get_message_summary(message_id).merge(:response => :ok).to_json
   end
 
 private
