@@ -16,9 +16,10 @@ class Set
 end
 
 class HeliotropeServer < Sinatra::Base
-  def initialize index, store
+  def initialize index, store, hooks
     @index = index
     @store = store
+    @hooks = hooks
     @search_state = [] # keep this around for optimization purposes
     super()
   end
@@ -519,7 +520,8 @@ end
 
 index = Heliotrope::Index.new opts.dir
 store = Heliotrope::Store.new File.join(opts.dir, "messages")
-server = HeliotropeServer.new index, store
+hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
+server = HeliotropeServer.new index, store, hooks
 
 app = if opts.mode == "development"
   Rack::Builder.new do
