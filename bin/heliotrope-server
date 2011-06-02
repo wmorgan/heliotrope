@@ -49,30 +49,79 @@ class HeliotropeServer < Sinatra::Base
     }.to_json
   end
 
-  post "/message" do
+  ## don't like this? write a sendmail hook.
+  SENDMAIL = "sendmail -oem -ti"
+
+  ## add a message to the store after sending it. idempotent: if the message
+  ## has already been added, reports and error and does nothing. if the send
+  ## fails, reports and error and does nothing.
+  post "/message/send.json" do
     content_type :json
 
+    rawbody = params["message"] or raise RequestError, "need a 'message' param"
+    labels = JSON.parse(params["labels"] || "[]")
+    state = JSON.parse(params["state"] || "[]")
+    extra = JSON.parse(params["extra"] || "{}")
+
     begin
-      rawbody = params["message"] or raise RequestError, "need a message"
-      labels = JSON.parse(params["labels"] || "[]")
-      state = JSON.parse(params["state"] || "[]")
-      extra = JSON.parse(params["extra"] || "{}")
-
-      rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
-
-      message = Heliotrope::Message.new(rawbody).parse!
-
+      message = raw_body_to_message rawbody
       if @index.contains_msgid? message.msgid
         { :response => :ok, :status => :seen }
       else
-        loc = @store.add rawbody
-        extra.merge! :loc => loc
-        doc_id, thread_id = @index.add_message message, state, labels, extra
-        { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
+        run_sendmail! rawbody, message
+        add_message message, rawbody, labels, state + ["sent"], extra
+      end
+    rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
+      puts "error response"
+      { :response => :error, :error_message => e.message }
+    end.to_json
+  end
+
+  class SendmailFailedError < StandardError; end
+  def run_sendmail! rawbody, message
+    if @hooks.enabled? "sendmail"
+      unless @hooks.run "sendmail", :rawbody => rawbody, :message => message
+        raise SendmailFailedError, "sendmail hook was not successful"
+      end
+    else
+      ret = IO.popen(SENDMAIL, "w") { |p| p.puts rawbody }
+      unless $?.success?
+        raise SendmailFailedError, "sendmail command failed with non-zero exit status"
+      end
+    end
+  end
+
+  ## add a message to the store
+  post "/message.json" do
+    content_type :json
+
+    rawbody = params["message"] or raise RequestError, "need a message"
+    labels = JSON.parse(params["labels"] || "[]")
+    state = JSON.parse(params["state"] || "[]")
+    extra = JSON.parse(params["extra"] || "{}")
+
+    begin
+      message = raw_body_to_message rawbody
+      if @index.contains_msgid? message.msgid
+        { :response => :ok, :status => :seen }
+      else
+        add_message message, labels, state, extra
       end
     rescue Heliotrope::InvalidMessageError => e
       { :response => :error, :error_message => e.message }
-    end.to_json
+    end
+  end
+
+  def raw_body_to_message rawbody
+    rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
+    Heliotrope::Message.new(rawbody).parse!
+  end
+
+  def add_message message, labels, state, extra
+    loc = @store.add rawbody
+    extra.merge! :loc => loc
+    doc_id, thread_id = @index.add_message message, state, labels, extra
+    { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }.to_json
   end
 
   def get_query_from_params
@@ -314,13 +363,6 @@ class HeliotropeServer < Sinatra::Base
     @index.update_message_state(message_id, state)
 
     get_message_summary(message_id).to_json
-  end
-
-  post "/message.json" do
-    body = params["body"] or raise RequestError, "need a 'body' param"
-    puts body
-
-    {:status => "ok"}.to_json
   end
 
 private

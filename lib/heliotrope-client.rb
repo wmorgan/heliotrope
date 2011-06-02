@@ -35,8 +35,8 @@ class HeliotropeClient
     get_json "message/#{id}", :mime_type_pref => preferred_mime_type
   end
 
-  def send_message body
-    post_json "message", :body => body
+  def send_message message, opts={}
+    post_json "message/send", opts.merge(:message => message)
   end
 
   def message_part message_id, part_id
