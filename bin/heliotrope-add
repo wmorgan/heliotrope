@@ -80,7 +80,8 @@ elsif opts.imap_host
     gets or abort
   end.chomp
 
-  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password
+  fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{opts.imap_host}-#{username}")
+  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :fn => fn
 else
   Heliotrope::MBoxStream.new $stdin
 end
