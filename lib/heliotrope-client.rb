@@ -21,7 +21,7 @@ class HeliotropeClient
   end
 
   def count query
-    get_json "count", :q => query
+    get_json("count", :q => query)["count"]
   end
 
   def thread id; get_json("thread/#{id}")["messageinfos"] end
@@ -45,11 +45,11 @@ class HeliotropeClient
     @resource["message/#{message_id}/raw"].get
   end
 
-  def labels; get_json("labels") end
+  def labels; get_json("labels")["labels"] end
   def info; get_json("info") end
-  def size; get_json("size") end
+  def size; get_json("size")["size"] end
 
-  def prune_labels!; post_json("labels/prune") end
+  def prune_labels!; post_json("labels/prune")["labels"] end
 
   def set_labels! thread_id, labels
     post_json "thread/#{thread_id}/labels", :labels => labels.to_json
