@@ -52,7 +52,14 @@ EOS
 
   banner <<EOS
 
-If none of the mbox, maildir or IMAP options are given, will read a single
+Options for reading from a GMail account:
+EOS
+  opt :gmail_username, "GMail username (default: prompt)", :type => String
+  opt :gmail_password, "GMail password (default: prompt)", :type => String
+
+  banner <<EOS
+
+If none of the mbox, maildir, IMAP or GMail options are given, will read a single
 message from stdin.
 EOS
 
@@ -82,6 +89,21 @@ elsif opts.imap_host
 
   fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{opts.imap_host}-#{username}")
   Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :fn => fn
+elsif opts.gmail_username
+  username = opts.gmail_username || begin
+    print "GMail username: "
+    $stdout.flush
+    gets or abort
+  end.chomp
+
+  password = opts.gmail_password || begin
+    print "GMail password (displayed!): "
+    $stdout.flush
+    gets or abort
+  end.chomp
+
+  fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
+  Heliotrope::GMailDumper.new :username => username, :password => password, :fn => fn
 else
   Heliotrope::MBoxStream.new $stdin
 end
