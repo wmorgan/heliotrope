@@ -16,6 +16,8 @@ class Set
 end
 
 class HeliotropeServer < Sinatra::Base
+  API_VERSION = 0.1
+
   def initialize index, store, hooks
     @index = index
     @store = store
@@ -46,7 +48,8 @@ class HeliotropeServer < Sinatra::Base
     content_type :json
     { :response => :ok,
       :status => :up,
-      :index_version => @index.version
+      :index_version => @index.version,
+      :version => API_VERSION.to_s
     }.to_json
   end
 
