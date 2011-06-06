@@ -115,7 +115,7 @@ if opts.dir
   store = Heliotrope::Store.new File.join(opts.dir, "messages")
 end
 
-server_url = "http://#{opts.host}:#{opts.port}/message"
+server_url = "http://#{opts.host}:#{opts.port}/message.json"
 num_scanned = num_indexed = num_bad = num_seen = 0
 startt = lastt = Time.now
 
