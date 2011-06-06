@@ -1,3 +1,5 @@
+require 'fileutils'
+
 module Heliotrope
 
 ## largely cribbed from sup
@@ -33,7 +35,7 @@ class Hooks
     @hooks = {}
     @envs = {}
 
-    Dir.mkdir dir unless File.exists? dir
+    FileUtils.mkdir_p dir unless File.exists? dir
   end
 
   def run name, locals={}
@@ -60,7 +62,7 @@ private
     @hooks[name] ||= begin
       IO.read fn_for(name)
     rescue SystemCallError => e
-      $stderr.puts "can't read hook: #{e.message}"
+      #$stderr.puts "can't read hook: #{e.message}"
       nil
     end
   end
