@@ -42,7 +42,8 @@ class HeliotropeTest < ::Test::Unit::TestCase
   def setup
     FileUtils.rm_rf TEST_DIR
     FileUtils.mkdir TEST_DIR
-    @index = Index.new TEST_DIR
+    hooks = Hooks.new File.join(TEST_DIR, "hooks")
+    @index = Index.new TEST_DIR, hooks
   end
 
   def teardown

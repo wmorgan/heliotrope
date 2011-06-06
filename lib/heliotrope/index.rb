@@ -37,12 +37,13 @@ class Index
 
   SNIPPET_MAX_SIZE = 100 # chars
 
-  def initialize base_dir
+  def initialize base_dir, hooks
     #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
     #@store = PStore.new File.join(base_dir, "pstore") # sucks
     FileUtils.mkdir_p base_dir
     @store = OklahomaMixer.open File.join(base_dir, "store.tch")
     @index = Whistlepig::Index.new File.join(base_dir, "index")
+    @hooks = hooks
     @query = nil # we always have (at most) one active query
     @debug = false
     reset_timers!
@@ -524,14 +525,20 @@ private
     startt = Time.now
     entry = Whistlepig::Entry.new
     entry.add_string "msgid", message.msgid
-    entry.add_string "from", message.from.indexable_text.downcase
-    entry.add_string "to", message.recipients.map { |x| x.indexable_text }.join(" ").downcase
+    entry.add_string "from", get_indexable_text(message.from).downcase
+    entry.add_string "to", message.recipients.map { |x| get_indexable_text x }.join(" ").downcase
     entry.add_string "subject", message.subject.downcase
     entry.add_string "date", message.date.to_s
-    entry.add_string "body", message.indexable_text.downcase
+    entry.add_string "body", get_indexable_text(message).downcase
     @index_time += Time.now - startt
 
     @index.add_entry entry
+  end
+
+  def get_indexable_text thing
+    orig = thing.indexable_text
+    transformed = @hooks.run "tokenize", :text => orig
+    transformed || orig
   end
 
   def write_messageinfo! message, state, docid, extra

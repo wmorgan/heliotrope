@@ -560,9 +560,9 @@ EOS
   opt :mode, "Runtime mode", :default => "development"
 end
 
-index = Heliotrope::Index.new opts.dir
-store = Heliotrope::Store.new File.join(opts.dir, "messages")
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
+index = Heliotrope::Index.new opts.dir, hooks
+store = Heliotrope::Store.new File.join(opts.dir, "messages")
 server = HeliotropeServer.new index, store, hooks
 
 app = if opts.mode == "development"

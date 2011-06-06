@@ -87,7 +87,8 @@ end
 
 index = store = nil
 if opts.dir
-  index = Heliotrope::Index.new opts.dir
+  hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
+  index = Heliotrope::Index.new opts.dir, hooks
   store = Heliotrope::Store.new File.join(opts.dir, "messages")
 end
 

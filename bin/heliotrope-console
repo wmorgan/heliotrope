@@ -27,7 +27,8 @@ EOS
 end
 
 include Heliotrope
-index = Index.new opts.dir
+hooks = Hooks.new File.join(opts.dir, "hooks")
+index = Index.new opts.dir, hooks
 store = Store.new File.join(opts.dir, "messages")
 
 puts <<EOS
