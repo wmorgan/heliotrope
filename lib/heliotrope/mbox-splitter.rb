@@ -31,18 +31,16 @@ class MboxSplitter
 
   def load!; end # nothing to do
 
-  attr_reader :cur_message
-
   def next_message
     message = ""
+    offset = @stream.tell
     while message.empty?
-      @cur_message = "message at #{@stream.tell}"
       @stream.each_line do |l|
         break if is_mbox_break_line?(l)
         message << l
       end
     end
-    message
+    [message, ["unread"], ["inbox"], offset]
   end
 
   def skip! num

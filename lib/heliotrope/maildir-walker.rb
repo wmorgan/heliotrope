@@ -10,11 +10,11 @@ class MaildirWalker
 
   def load!; @files = get_files end
 
-  attr_reader :cur_message
-
   def next_message
     return nil if @files.empty?
-    IO.read(@cur_message = @files.shift)
+    fn = @files.shift
+    message = IO.read fn
+    [message, ["unread"], ["inbox"], fn]
   end
 
   def skip! num

@@ -102,11 +102,11 @@ begin
 
   source.skip! opts.num_skip if opts.num_skip
   until source.done?
-    rawbody = source.next_message
+    rawbody, labels, state, desc = source.next_message
+    puts "; read #{desc} with labels {#{labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
+
     break if opts.num_messages && num_scanned >= opts.num_messages
     num_scanned += 1
-
-    puts "; reading #{source.cur_message}" if opts.verbose
 
     rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
 
@@ -117,14 +117,14 @@ begin
           num_seen += 1
         else
           loc = store.add rawbody
-          index.add_message message, %w(unread), %w(inbox), :loc => loc
+          index.add_message message, state, labels, :loc => loc
           num_indexed += 1
         end
       rescue Heliotrope::InvalidMessageError => e
         num_bad += 1
       end
     else
-      response = RestClient.post server_url, :message => rawbody, :state => %w(unread).to_json, :labels => %w(inbox).to_json
+      response = RestClient.post server_url, :message => rawbody, :state => state.to_json, :labels => labels.to_json
       response = JSON.parse(response)
 
       if response["response"] == "ok"
