@@ -136,7 +136,9 @@ class HeliotropeServer < Sinatra::Base
     end
 
     raise RequestError, "need a query" unless query
-    query
+
+    transformed = @hooks.run "transform-query", :query => query
+    transformed || query
   end
 
   def get_search_results
