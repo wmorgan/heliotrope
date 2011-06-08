@@ -173,7 +173,12 @@ class GMailDumper
         query = ids.first .. ids.last
         puts "; requesting messages #{query.inspect} from imap server"
         startt = Time.now
-        imapdata = @imap.uid_fetch query, ["UID", "FLAGS", "X-GM-LABELS", "BODY.PEEK[]"]
+        imapdata = begin
+          @imap.uid_fetch query, ["UID", "FLAGS", "X-GM-LABELS", "BODY.PEEK[]"]
+        rescue Net::IMAP::NoResponseError => e
+          puts "warning: skipping messages #{query}: #{e.message}"
+          []
+        end
         elapsed = Time.now - startt
         #printf "; the imap server loving gave us %d messages in %.1fs = a whopping %.1fm/s\n", imapdata.size, elapsed, imapdata.size / elapsed
       end
