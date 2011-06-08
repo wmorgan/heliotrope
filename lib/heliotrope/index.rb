@@ -537,7 +537,7 @@ private
 
   def get_indexable_text thing
     orig = thing.indexable_text
-    transformed = @hooks.run "tokenize", :text => orig
+    transformed = @hooks.run "transform-text", :text => orig
     transformed || orig
   end
 
