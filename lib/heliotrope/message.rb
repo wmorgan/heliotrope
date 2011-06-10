@@ -16,7 +16,9 @@ class Message
   def parse!
     @m = RMail::Parser.read @rawbody
 
-    @msgid = munge_msgids(decode_header(validate_field(:message_id, @m.header["message-id"]))).first
+    @msgid = find_msgids(decode_header(validate_field(:message_id, @m.header["message-id"]))).first
+    @safe_msgid = munge_msgid @msgid
+
     ## this next error happens if we have a field, but we can't find a <something> in it
     raise InvalidMessageError, "can't parse msgid: #{@m.header['message-id']}" unless @msgid
 
@@ -33,9 +35,10 @@ class Message
     @bcc = @m.header["bcc"] ? Person.many_from_string(decode_header(@m.header["bcc"])) : []
     @subject = @m.header["subject"] ? decode_header(@m.header["subject"]) : ""
 
-    @refs = munge_msgids decode_header(@m.header["references"] || "")
-    reply_to = munge_msgids decode_header(@m.header["in-reply-to"] || "")
-    @refs += reply_to unless @refs.member? reply_to
+    @refs = find_msgids decode_header(@m.header["references"] || "")
+    in_reply_to = find_msgids decode_header(@m.header["in-reply-to"] || "")
+    @refs += in_reply_to unless @refs.member? in_reply_to.first
+    @safe_refs = @refs.map { |r| munge_msgid(r) }
 
     ## various other headers that you don't think we will need until we
     ## actually need them.
@@ -51,7 +54,7 @@ class Message
     self
   end
 
-  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email, :list_post, :list_unsubscribe, :list_subscribe
+  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email, :list_post, :list_unsubscribe, :list_subscribe, :reply_to, :safe_msgid, :safe_refs
 
   ## we don't encode any non-text parts here, because json encoding of
   ## binary objects is crazy-talk, and because those are likely to be
@@ -146,8 +149,12 @@ class Message
 private
 
   ## hash the fuck out of all message ids. trust me, you want this.
-  def munge_msgids msgids
-    msgids.scan(/<(.+?)>/).map { |x| Digest::MD5.hexdigest(x.first) }
+  def munge_msgid msgid
+    Digest::MD5.hexdigest msgid
+  end
+
+  def find_msgids msgids
+    msgids.scan(/<(.+?)>/).map(&:first)
   end
 
   def mime_part_types part=@m
@@ -217,6 +224,8 @@ private
 
   ## rfc2047-decode a header, convert to utf-8, and normalize whitespace
   def decode_header v
+    return "" if v.nil?
+
     v = if Decoder.is_rfc2047_encoded? v
       Decoder.decode_rfc2047 "utf-8", v
     else # assume it's ascii and transcode

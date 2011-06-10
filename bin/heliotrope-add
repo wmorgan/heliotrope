@@ -136,7 +136,7 @@ begin
     if opts.dir
      begin
        message = Heliotrope::Message.new(rawbody).parse!
-       if index.contains_msgid? message.msgid
+       if index.contains_safe_msgid? message.safe_msgid
           num_seen += 1
         else
           loc = store.add rawbody

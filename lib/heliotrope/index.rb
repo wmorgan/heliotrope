@@ -64,7 +64,7 @@ class Index
   def version; 2 end
 
   def add_message message, state=[], labels=[], extra={}
-    key = "docid/#{message.msgid}"
+    key = "docid/#{message.safe_msgid}"
     if contains_key? key
       docid = load_int key
       threadid = load_int "thread/#{docid}"
@@ -162,7 +162,7 @@ class Index
     new_tlabels
   end
 
-  def contains_msgid? msgid; contains_key? "docid/#{msgid}" end
+  def contains_safe_msgid? safe_msgid; contains_key? "docid/#{safe_msgid}" end
 
   def size; @index.size end
 
@@ -393,7 +393,7 @@ private
     startt = Time.now
 
     ## build the path of msgids from leaf to ancestor
-    ids = [message.msgid] + message.refs.reverse
+    ids = [message.safe_msgid] + message.safe_refs.reverse
     seen = {}
     ids = ids.map { |x| seen[x] = true && x unless seen[x] }.compact
 
@@ -458,14 +458,14 @@ private
   ## messages that we actually have in the store, and making psuedo-message
   ## roots for the cases when we have seen multiple children but not the
   ## parent.
-  def build_thread_structure_from msgid, seen={}
-    return [] if seen[msgid]
+  def build_thread_structure_from safe_msgid, seen={}
+    return [] if seen[safe_msgid]
 
-    docid = load_int "docid/#{msgid}"
-    children = load_set "cmsgids/#{msgid}"
+    docid = load_int "docid/#{safe_msgid}"
+    children = load_set "cmsgids/#{safe_msgid}"
     #puts "> children of #{msgid} are #{children.inspect}"
 
-    seen[msgid] = true
+    seen[safe_msgid] = true
     child_thread_structures = children.map { |c| build_thread_structure_from(c, seen) }.compact
 
     #puts "< bts(#{msgid}): docid=#{docid.inspect}, child_structs=#{child_thread_structures.inspect}"
@@ -524,7 +524,7 @@ private
     ## make the entry
     startt = Time.now
     entry = Whistlepig::Entry.new
-    entry.add_string "msgid", message.msgid
+    entry.add_string "msgid", message.safe_msgid
     entry.add_string "from", get_indexable_text(message.from).downcase
     entry.add_string "to", message.recipients.map { |x| get_indexable_text x }.join(" ").downcase
     entry.add_string "subject", message.subject.downcase
@@ -556,7 +556,7 @@ private
     ## add it to the store
     write_hash "doc/#{docid}", messageinfo
     write_set "state/#{docid}", state
-    write_int "docid/#{message.msgid}", docid
+    write_int "docid/#{message.safe_msgid}", docid
     write_string "msnip/#{docid}", message.snippet[0, SNIPPET_MAX_SIZE]
     @store_time += Time.now - startt
 

@@ -69,7 +69,7 @@ class HeliotropeServer < Sinatra::Base
 
     begin
       message = raw_body_to_message rawbody
-      if @index.contains_msgid? message.msgid
+      if @index.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
         run_sendmail! rawbody, message
@@ -105,7 +105,7 @@ class HeliotropeServer < Sinatra::Base
 
     begin
       message = raw_body_to_message rawbody
-      if @index.contains_msgid? message.msgid
+      if @index.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
         add_message message, rawbody, labels, state, extra
