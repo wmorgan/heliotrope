@@ -231,13 +231,6 @@ class HeliotropeServer < Sinatra::Base
   get "/thread/:thread_id/info.json" do |thread_id|
     content_type :json
     threadinfo = get_threadinfo thread_id
-
-    ## the structure field for long threads is deeply nested, and the
-    ## json encoder complains about deeply-nested structures.  we could
-    ## raise its nesting limit, but this field isn't needed by anyone
-    ## (so far!), so we'll just remove it. if someone wants it later, we
-    ## can revisit.
-    threadinfo.delete :structure
     threadinfo.merge(:response => :ok).to_json
   end
 
@@ -268,7 +261,14 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def get_threadinfo thread_id
-    @index.load_threadinfo(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+    threadinfo = @index.load_threadinfo(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+    ## the structure field for long threads is deeply nested, and the
+    ## json encoder complains about deeply-nested structures.  we could
+    ## raise its nesting limit, but this field isn't needed by anyone
+    ## (so far!), so we'll just remove it. if someone wants it later, we
+    ## can revisit.
+    threadinfo.delete :structure
+    threadinfo
   end
 
   def get_message_summary message_id
