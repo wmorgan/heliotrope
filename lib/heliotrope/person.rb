@@ -44,7 +44,7 @@ class Person
   def self.many_from_string string
     return [] if string.nil? || string !~ /\S/
     emails = string.gsub(/[\t\r\n]+/, " ").split(/,\s*(?=(?:[^"]*"[^"]*")*(?![^"]*"))/)
-    emails.map { |e| from_string e }
+    emails.map { |e| from_string e }.compact
   end
 
   def indexable_text; [name, email, handle].join(" ") end
