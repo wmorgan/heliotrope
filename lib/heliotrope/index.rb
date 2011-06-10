@@ -547,9 +547,9 @@ private
     messageinfo = {
       :subject => message.subject,
       :date => message.date,
-      :from => message.from.to_s,
-      :to => message.direct_recipients.map { |x| x.to_s },
-      :cc => message.indirect_recipients.map { |x| x.to_s },
+      :from => message.from.to_email_address,
+      :to => message.direct_recipients.map { |x| x.to_email_address },
+      :cc => message.indirect_recipients.map { |x| x.to_email_address },
       :has_attachment => message.has_attachment?,
     }.merge extra
 

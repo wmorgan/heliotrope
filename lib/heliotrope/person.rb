@@ -10,7 +10,7 @@ class Person
 
   attr_reader :name, :email, :handle
 
-  def to_s
+  def to_email_address
     qname = name =~ /"/ ? name.inspect : name
     [qname, "<#{email}>"].compact.join(" ")
   end

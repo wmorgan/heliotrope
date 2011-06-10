@@ -30,10 +30,11 @@ class Message
       Time.at 0
     end
 
-    @to = @m.header["to"] ? Person.many_from_string(decode_header(@m.header["to"])) : []
-    @cc = @m.header["cc"] ? Person.many_from_string(decode_header(@m.header["cc"])) : []
-    @bcc = @m.header["bcc"] ? Person.many_from_string(decode_header(@m.header["bcc"])) : []
-    @subject = @m.header["subject"] ? decode_header(@m.header["subject"]) : ""
+    @to = Person.many_from_string decode_header(@m.header["to"])
+    @cc = Person.many_from_string decode_header(@m.header["cc"])
+    @bcc = Person.many_from_string decode_header(@m.header["bcc"])
+    @subject = decode_header @m.header["subject"]
+    @reply_to = Person.from_string @m.header["reply-to"]
 
     @refs = find_msgids decode_header(@m.header["references"] || "")
     in_reply_to = find_msgids decode_header(@m.header["in-reply-to"] || "")
@@ -68,16 +69,17 @@ class Message
       end
     end.compact
 
-    { :from => from,
-      :to => to,
-      :cc => cc,
-      :bcc => bcc,
+    { :from => (from ? from.to_email_address : ""),
+      :to => to.map(&:to_email_address),
+      :cc => cc.map(&:to_email_address),
+      :bcc => bcc.map(&:to_email_address),
       :subject => subject,
       :date => date,
       :refs => refs,
       :parts => parts,
       :message_id => message_id,
       :snippet => snippet,
+      :reply_to => (reply_to ? reply_to.to_email_address : ""),
 
       :recipient_email => recipient_email,
       :list_post => list_post,
