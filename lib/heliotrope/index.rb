@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 require 'whistlepig'
-require 'oklahoma_mixer'
+require 'leveldb'
 require 'set'
 require 'fileutils'
 
@@ -38,10 +38,11 @@ class Index
   SNIPPET_MAX_SIZE = 100 # chars
 
   def initialize base_dir, hooks
+    FileUtils.mkdir_p base_dir
     #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
     #@store = PStore.new File.join(base_dir, "pstore") # sucks
-    FileUtils.mkdir_p base_dir
-    @store = OklahomaMixer.open File.join(base_dir, "store.tch")
+    #@store = OklahomaMixer.open File.join(base_dir, "store.tch")
+    @store = LevelDB::DB.new File.join(base_dir, "store")
     @index = Whistlepig::Index.new File.join(base_dir, "index")
     @hooks = hooks
     @query = nil # we always have (at most) one active query
