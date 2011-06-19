@@ -17,8 +17,8 @@ spec = Gem::Specification.new do |s|
  s.add_dependency 'trollop', '>= 1.16.2'
  s.add_dependency 'whistlepig', '>= 0.7'
  s.add_dependency 'rmail', '>= 1.0.0'
+ s.add_dependency 'leveldb', '>= 0.4'
 
- s.add_dependency 'oklahoma_mixer'
  s.add_dependency 'rest-client'
  s.add_dependency 'rack'
  s.add_dependency 'json'
