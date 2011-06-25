@@ -11,7 +11,7 @@ class ImapDumper
     @fn = opts[:fn] or raise ArgumentError, "need :fn"
 
     @ssl = opts.member?(:ssl) ? opts[:ssl] : true
-    @port = opts[:port] || (ssl ? 993 : 143)
+    @port = opts[:port] || (@ssl ? 993 : 143)
     @folder = opts[:folder] || "inbox"
 
     @msgs = []
