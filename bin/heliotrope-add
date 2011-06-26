@@ -60,11 +60,11 @@ EOS
 Options for reading from an IMAP account:
 EOS
   opt :imap_host, "IMAP server hostname", :type => String
-  opt :imap_port, "IMAP server port (default: 993 with ssl, 143 without)"
+  opt :imap_port, "IMAP server port (default: 993 with ssl, 143 without)", :type => Integer
   opt :dont_use_ssl, "Don't use SSL"
   opt :imap_username, "IMAP username (default: prompt)", :type => String
   opt :imap_password, "IMAP password (default: prompt)", :type => String
-  opt :imap_folder, "IMAP folder", :default => "inbox"
+  opt :imap_folder, "IMAP folder", :default => "INBOX"
 
   banner <<EOS
 
@@ -86,6 +86,8 @@ if opts.mbox_fn || opts.maildir_dirs || opts.imap_host
   Trollop::die "unknown option #{ARGV.first}" unless ARGV.empty?
 end
 
+port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
+
 source = if opts.mbox_fn
   Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.mbox_start_offset
 elsif opts.maildir_dirs
@@ -94,7 +96,8 @@ elsif opts.imap_host
   username = opts.imap_username || ask("IMAP username: ")
   password = opts.imap_password || ask_secret("IMAP password: ")
   fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
-  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :state_fn => fn
+  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => port, :ssl => !opts.dont_use_ssl,
+    :username => username, :password => password, :state_fn => fn, :folder => opts.imap_folder
 elsif opts.gmail_username
   username = opts.gmail_username || ask("GMail username: ")
   password = opts.gmail_password || ask_secret("GMail password (displayed!): ")
