@@ -67,12 +67,15 @@ class HeliotropeServer < Sinatra::Base
     state = JSON.parse(params["state"] || "[]")
     extra = JSON.parse(params["extra"] || "{}")
 
+    ## force_recipients is used for bouncing email
+    force_recipients = JSON.parse(params["force_recipients"] || "[]")
+
     begin
       message = raw_body_to_message rawbody
       if @index.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
-        run_sendmail! rawbody, message
+        run_sendmail! rawbody, message, force_recipients
         add_message message, rawbody, labels, state + ["sent"], extra
       end
     rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
@@ -81,13 +84,14 @@ class HeliotropeServer < Sinatra::Base
   end
 
   class SendmailFailedError < StandardError; end
-  def run_sendmail! rawbody, message
+  def run_sendmail! rawbody, message, force_recipients
     if @hooks.enabled? "sendmail"
-      unless @hooks.run "sendmail", :rawbody => rawbody, :message => message
+      unless @hooks.run "sendmail", :rawbody => rawbody, :message => message, :force_recipients => force_recipients
         raise SendmailFailedError, "sendmail hook was not successful"
       end
     else
-      ret = IO.popen(SENDMAIL, "w") { |p| p.puts rawbody }
+      cmd = SENDMAIL + force_recipients.map { |x| " " + x }.join
+      ret = IO.popen(cmd, "w") { |p| p.puts rawbody }
       unless $?.success?
         raise SendmailFailedError, "sendmail command failed with non-zero exit status"
       end
