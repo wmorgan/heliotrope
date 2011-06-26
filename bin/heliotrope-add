@@ -41,6 +41,7 @@ EOS
   opt :dir, "Don't use the server. Instead, write directly to the store directory.", :type => String
   opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
   opt :num_skip, "Skip this many many messages and then start indexing", :type => Integer, :short => "k"
+  opt :state_fn, "Store any server state in this file (IMAP and Gmail only)", :type => String
   opt :verbose, "Enable verbose output"
 
   banner <<EOS
@@ -92,12 +93,12 @@ elsif opts.maildir_dirs
 elsif opts.imap_host
   username = opts.imap_username || ask("IMAP username: ")
   password = opts.imap_password || ask_secret("IMAP password: ")
-  fn = File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
+  fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
   Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :state_fn => fn
 elsif opts.gmail_username
   username = opts.gmail_username || ask("GMail username: ")
   password = opts.gmail_password || ask_secret("GMail password (displayed!): ")
-  fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
+  fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
   Heliotrope::GMailDumper.new :username => username, :password => password, :state_fn => fn
 else
   Heliotrope::MBoxStream.new $stdin
