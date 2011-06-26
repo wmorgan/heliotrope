@@ -88,7 +88,7 @@ elsif opts.imap_host
   end.chomp
 
   fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{opts.imap_host}-#{username}")
-  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :fn => fn
+  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :state_fn => fn
 elsif opts.gmail_username
   username = opts.gmail_username || begin
     print "GMail username: "
@@ -103,7 +103,7 @@ elsif opts.gmail_username
   end.chomp
 
   fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
-  Heliotrope::GMailDumper.new :username => username, :password => password, :fn => fn
+  Heliotrope::GMailDumper.new :username => username, :password => password, :state_fn => fn
 else
   Heliotrope::MBoxStream.new $stdin
 end

@@ -2,40 +2,143 @@
 require "net/imap"
 require 'json'
 
+# Monkeypatch Net::IMAP to support GMail IMAP extensions.
+# http://code.google.com/apis/gmail/imap/
+module Net
+  class IMAP
+
+    # Implement GMail XLIST command
+    def xlist(refname, mailbox)
+      synchronize do
+        send_command("XLIST", refname, mailbox)
+        return @responses.delete("XLIST")
+      end
+    end
+
+    class ResponseParser
+      def response_untagged
+        match(T_STAR)
+        match(T_SPACE)
+        token = lookahead
+        if token.symbol == T_NUMBER
+          return numeric_response
+        elsif token.symbol == T_ATOM
+          case token.value
+          when /\A(?:OK|NO|BAD|BYE|PREAUTH)\z/ni
+            return response_cond
+          when /\A(?:FLAGS)\z/ni
+            return flags_response
+          when /\A(?:LIST|LSUB|XLIST)\z/ni  # Added XLIST
+            return list_response
+          when /\A(?:QUOTA)\z/ni
+            return getquota_response
+          when /\A(?:QUOTAROOT)\z/ni
+            return getquotaroot_response
+          when /\A(?:ACL)\z/ni
+            return getacl_response
+          when /\A(?:SEARCH|SORT)\z/ni
+            return search_response
+          when /\A(?:THREAD)\z/ni
+            return thread_response
+          when /\A(?:STATUS)\z/ni
+            return status_response
+          when /\A(?:CAPABILITY)\z/ni
+            return capability_response
+          else
+            return text_response
+          end
+        else
+          parse_error("unexpected token %s", token.symbol)
+        end
+      end
+
+      def response_tagged
+        tag = atom
+        match(T_SPACE)
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        #puts "AAAAAAAA  #{tag} #{name} #{resp_text} #{@str}"
+        return TaggedResponse.new(tag, name, resp_text, @str)
+      end
+
+      def msg_att
+        match(T_LPAR)
+        attr = {}
+        while true
+          token = lookahead
+          case token.symbol
+          when T_RPAR
+            shift_token
+            break
+          when T_SPACE
+            shift_token
+            token = lookahead
+          end
+          case token.value
+          when /\A(?:ENVELOPE)\z/ni
+            name, val = envelope_data
+          when /\A(?:FLAGS)\z/ni
+            name, val = flags_data
+          when /\A(?:X-GM-LABELS)\z/ni  # Added X-GM-LABELS extension
+            name, val = flags_data
+          when /\A(?:INTERNALDATE)\z/ni
+            name, val = internaldate_data
+          when /\A(?:RFC822(?:\.HEADER|\.TEXT)?)\z/ni
+            name, val = rfc822_text
+          when /\A(?:RFC822\.SIZE)\z/ni
+            name, val = rfc822_size
+          when /\A(?:BODY(?:STRUCTURE)?)\z/ni
+            name, val = body_data
+          when /\A(?:UID)\z/ni
+            name, val = uid_data
+          when /\A(?:X-GM-MSGID)\z/ni  # Added X-GM-MSGID extension
+            name, val = uid_data
+          when /\A(?:X-GM-THRID)\z/ni  # Added X-GM-THRID extension
+            name, val = uid_data
+          else
+            parse_error("unknown attribute `%s'", token.value)
+          end
+          attr[name] = val
+        end
+        return attr
+      end
+    end
+  end
+end
+
 module Heliotrope
-class ImapDumper
+class IMAPDumper
+
   def initialize opts
-    @host = opts[:host] or raise ArgumentError, "need :host"
-    @username = opts[:username] or raise ArgumentError, "need :username"
-    @password = opts[:password] or raise ArgumentError, "need :password"
-    @fn = opts[:fn] or raise ArgumentError, "need :fn"
-
-    @ssl = opts.member?(:ssl) ? opts[:ssl] : true
-    @port = opts[:port] || (ssl ? 993 : 143)
-    @folder = opts[:folder] || "inbox"
-
+    %w(host port username password state_fn folder ssl).each do |x|
+      v = opts[x.to_sym]
+      raise ArgumentError, "need #{x}" unless v
+      instance_variable_set "@#{x}", v
+    end
     @msgs = []
   end
 
   def save!
     return unless @last_added_uid && @last_uidvalidity
 
-    File.open(@fn, "w") do |f|
+    File.open(@state_fn, "w") do |f|
       f.puts [@last_added_uid, @last_uidvalidity].to_json
     end
   end
 
   def load!
     @last_added_uid, @last_uidvalidity = begin
-      JSON.parse IO.read(@fn)
+      JSON.parse IO.read(@state_fn)
     rescue SystemCallError => e
       nil
     end
 
-    puts "; connecting..."
+    puts "; connecting to #{@host}:#{@port} (ssl: #{!!@ssl})..."
     @imap = Net::IMAP.new @host, @port, :ssl => @ssl
     puts "; login as #{@username} ..."
     @imap.login @username, @password
+
     @imap.examine @folder
 
     @uidvalidity = @imap.responses["UIDVALIDITY"].first
@@ -50,15 +153,20 @@ class ImapDumper
     end
 
     @last_uidvalidity = @uidvalidity
+
     puts "; found #{@ids.size} messages to scan"
   end
 
   def skip! num
-    @ids = @ids[num .. -1] || []
+    @ids = @ids[num .. -1]
     @msgs = []
   end
 
-  NUM_MESSAGES_PER_ITERATION = 50
+  NUM_MESSAGES_PER_ITERATION = 100
+
+  def imap_query_columns
+    %w(UID FLAGS BODY.PEEK[])
+  end
 
   def next_message
     if @msgs.empty?
@@ -68,9 +176,14 @@ class ImapDumper
         query = ids.first .. ids.last
         puts "; requesting messages #{query.inspect} from imap server"
         startt = Time.now
-        imapdata = @imap.uid_fetch query, ["UID", "FLAGS", "BODY.PEEK[]"]
+        imapdata = begin
+          @imap.uid_fetch query, imap_query_columns
+        rescue Net::IMAP::NoResponseError => e
+          puts "warning: skipping messages #{query}: #{e.message}"
+          []
+        end
         elapsed = Time.now - startt
-        printf "; gmail loving gave us %d messages in %.1fs = a whopping %.1fm/s\n", imapdata.size, elapsed, imapdata.size / elapsed
+        #printf "; the imap server loving gave us %d messages in %.1fs = a whopping %.1fm/s\n", imapdata.size, elapsed, imapdata.size / elapsed
       end
 
       @msgs = imapdata.map do |data|
@@ -81,10 +194,21 @@ class ImapDumper
           state += ["unread"]
         end
 
+        labels = (data.attr["X-GM-LABELS"] || []).map { |label| label.to_s.downcase }
+        if labels.member? "sent"
+          labels -= ["Sent"]
+          state += ["sent"]
+        end
+        if labels.member? "starred"
+          labels -= ["Starred"]
+          state += ["starred"]
+        end
+        labels -= ["important"] # fuck that noise
+
         body = data.attr["BODY[]"].gsub "\r\n", "\n"
         uid = data.attr["UID"]
 
-        [body, [], state, uid]
+        [body, labels, state, uid]
       end
     end
 
