@@ -7,6 +7,21 @@ require 'rest_client'
 require "heliotrope"
 require 'json'
 
+def ask q
+  print "IMAP password (displayed!): "
+  $stdout.flush
+  (gets || abort).chomp
+end
+
+def ask_secret q
+  begin
+    `stty -echo`
+    ask q
+  ensure
+    `stty echo`
+  end
+end
+
 opts = Trollop::options do
   banner <<EOS
 Adds an email or a set of emails to a Heliotrope server. By default, takes a
@@ -75,33 +90,13 @@ source = if opts.mbox_fn
 elsif opts.maildir_dirs
   Heliotrope::MaildirWalker.new(*opts.maildir_dirs)
 elsif opts.imap_host
-  username = opts.imap_username || begin
-    print "IMAP username: "
-    $stdout.flush
-    gets or abort
-  end.chomp
-
-  password = opts.imap_password || begin
-    print "IMAP password (displayed!): "
-    $stdout.flush
-    gets or abort
-  end.chomp
-
-  fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{opts.imap_host}-#{username}")
+  username = opts.imap_username || ask("IMAP username: ")
+  password = opts.imap_password || ask_secret("IMAP password: ")
+  fn = File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
   Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => opts.imap_port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :state_fn => fn
 elsif opts.gmail_username
-  username = opts.gmail_username || begin
-    print "GMail username: "
-    $stdout.flush
-    gets or abort
-  end.chomp
-
-  password = opts.gmail_password || begin
-    print "GMail password (displayed!): "
-    $stdout.flush
-    gets or abort
-  end.chomp
-
+  username = opts.gmail_username || ask("GMail username: ")
+  password = opts.gmail_password || ask_secret("GMail password (displayed!): ")
   fn = File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
   Heliotrope::GMailDumper.new :username => username, :password => password, :state_fn => fn
 else
