@@ -29,6 +29,7 @@ class MboxSplitter
     @stream.seek opts[:start_offset] if opts[:start_offset]
   end
 
+  def can_provide_labels?; false end
   def load!; end # nothing to do
 
   def next_message

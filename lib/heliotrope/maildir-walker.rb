@@ -8,6 +8,7 @@ class MaildirWalker
     @dirs = dirs
   end
 
+  def can_provide_labels?; false end
   def load!; @files = get_files end
 
   def next_message

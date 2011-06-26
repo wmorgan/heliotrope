@@ -125,6 +125,11 @@ begin
   source.skip! opts.num_skip if opts.num_skip
   until source.done?
     rawbody, labels, state, desc = source.next_message
+
+    ## if the source can't set its own labels, we will just add everything to
+    ## the inbox
+    labels += %w(inbox) unless source.can_provide_labels?
+
     puts "; read #{desc} with labels {#{labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
 
     break if opts.num_messages && num_scanned >= opts.num_messages

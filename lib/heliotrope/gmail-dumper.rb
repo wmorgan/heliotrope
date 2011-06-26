@@ -11,5 +11,8 @@ class GMailDumper < IMAPDumper
   def imap_query_columns
     %w(UID FLAGS X-GM-LABELS BODY.PEEK[])
   end
+
+  ## we can figure out our own labels
+  def can_provide_labels?; true end
 end
 end

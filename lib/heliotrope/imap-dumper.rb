@@ -109,6 +109,7 @@ end
 
 module Heliotrope
 class IMAPDumper
+  def can_provide_labels?; false end
 
   def initialize opts
     %w(host port username password state_fn folder ssl).each do |x|
@@ -199,6 +200,8 @@ class IMAPDumper
           state += ["unread"]
         end
 
+        ## it's a little funny to do this gmail-specific label parsing here, but
+        ## i'm hoping that other imap servers might one day support this extension
         labels = (data.attr["X-GM-LABELS"] || []).map { |label| label.to_s.downcase }
         if labels.member? "sent"
           labels -= ["Sent"]
