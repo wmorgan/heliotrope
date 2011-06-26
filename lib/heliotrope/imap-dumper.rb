@@ -148,21 +148,25 @@ class IMAPDumper
       puts "; found #{@uidnext - @last_added_uid} new messages..."
       ((@last_added_uid + 1) .. @uidnext).to_a
     else
-      puts "; rescanning everything..."
+      if @last_uidvalidity
+        puts "; UID validity has CHANGED! your server sucks. downloading ALL uids..."
+      else
+        puts "; is this your first time, sweetie? downloading all uids..."
+      end
       @imap.uid_search(["NOT", "DELETED"]) || []
     end
 
     @last_uidvalidity = @uidvalidity
 
-    puts "; found #{@ids.size} messages to scan"
+    puts "; found #{@ids.size} messages to import"
   end
 
   def skip! num
-    @ids = @ids[num .. -1]
+    @ids = @ids[num .. -1] || []
     @msgs = []
   end
 
-  NUM_MESSAGES_PER_ITERATION = 100
+  NUM_MESSAGES_PER_ITERATION = 50
 
   def imap_query_columns
     %w(UID FLAGS BODY.PEEK[])
@@ -183,6 +187,7 @@ class IMAPDumper
           []
         end
         elapsed = Time.now - startt
+        puts "; got #{imapdata.size} messages"
         #printf "; the imap server loving gave us %d messages in %.1fs = a whopping %.1fm/s\n", imapdata.size, elapsed, imapdata.size / elapsed
       end
 
