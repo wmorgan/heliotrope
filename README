@@ -1,18 +1,15 @@
-Heliotrope is a personal, search-centric, threaded email server. It provides a
-backend service against which email clients / MUAs can be written.
+Heliotrope is a personal email server. It provides all the functionality you
+want in a modern email client:
 
-Heliotrope provides all the features you actually want in a modern email
-client:
-
-- fast, full-text search over all messages
-- a sophisticated query language
 - proper message threading
-- arbitrary labels
+- labels
+- fast, full-text search over all messages with a complete query language
 - support for signed and encrypted email
 - an extensible JSON-over-HTTP API
 
-Heliotrope is a work in progress. It is not stable. It is only somewhat
-tested.
+Heliotrope is a backend service against which email clients / MUAs can be
+written. To use it, you must use a client. For an example client, see
+Turnsole: http://github.com/wmorgan/turnsole.
 
 WHY ANOTHER PROTOCOL? WHY NOT JUST USE IMAP?
 
@@ -22,45 +19,47 @@ REQUIREMENTS
 
 Heliotrope is written in a mixture of Ruby and C. You will need a working C
 compiler, and a modern Ruby. 1.8.7 or 1.9.2 are good choices. Ruby 1.9.2 will
-give you better performance.
+give you better performance and better i18n support.
 
 Heliotrope uses html2text to generate text from HTML attachments. You will
 need this or some reasonable alternative.
 
-Do this:
-0. Install html2text. On Debian-based Linux distros, it's `sudo apt-get
+PREPARING YOURSELF
+
+0. Find your happy place.
+1. Install html2text. On Debian-based Linux distros, it's `sudo apt-get
    install html2text`.
-1. Install a modern Ruby. I recommend 1.9.2. On Debian-based Linux distros,
-   you can try the ruby1.9.1 package. Or you can download and compile it from
-   http://www.ruby-lang.org/en/downloads/.
-2. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb` (or
-   `gem1.9.1 ...` if you're using the Debian version).
+2. Install a modern Ruby. I recommend 1.9.2. On Debian-based Linux distros,
+   you can try the ruby1.9.1 package. You can download and compile it from
+   http://www.ruby-lang.org/en/downloads/ if you are feeling crazy.
+3. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb`
 
 GETTING IT
 
-Run this: `git clone https://github.com/wmorgan/heliotrope.git`
-
 Once Heliotrope is more stable, you will be able to install it via rubygems.
+For you, you should run this:
+
+  git clone https://github.com/wmorgan/heliotrope.git
 
 RUNNING IT
 
-Run `ruby -Ilib bin/heliotrope-server -d <mailstore>`.
+Decide where you want to store everything. Call this directory <dir>.
+Now run `ruby -Ilib bin/heliotrope-server -d <dir>`.
 
 Heliotrope exposes a simple debugging HTML interface. If you point your
-browser to http://localhost:8042, you should see your empty mailstore.
-
+browser to http://localhost:8042/, you should see your empty mailstore.
 Congrats! You're running Heliotrope.
 
 IMPORTING SOME MAIL
 
 Heliotrope only returns email in the order it was added to the system. For
-normal operation (in which email is added as it arrives) this is fine. For
-bulk imports, however, you must take care to add the email in the order you
-want it returned.
+normal operation, in which email is added as it arrives, this is fine. For
+bulk imports, you must take care to add the email in the order you want it
+returned.
 
-First, kill your server. You can add emails to the server one at a time when
-it's running (see ADDING EMAIL), but for bulk imports, it's much faster to
-avoid the HTTP overhead.
+To add email, first kill your server. You can add email to the server one at a
+time when it's running (see ADDING EMAIL below), but for bulk imports, it's
+much faster to avoid the HTTP overhead.
 
 To add a pre-existing mbox:
   ruby -Ilib bin/heliotrope-add -m <mbox> -d <mailstore>
@@ -71,15 +70,16 @@ To add a pre-existing maildir:
 To add a pre-existing Gmail account:
   ruby -Ilib bin/heliotrope-add -g <gmail username> -d <mailstore>
 
-To add a pre-existing IMAP account:
+To add a pre-existing, non-Gmail IMAP account:
   ruby -Ilib bin/heliotrope-add -i <imap server> -d <mailstore>
 
 For testing purposes, you may want to limit the number of emails added by
 using the --num-messages option.
 
-After import, start the server. You should see stuff at http://localhost:8042.
+After import, start the server again. You should see stuff at
+http://localhost:8042/.
 
-For a curses client based on Sup, see https://github.com/wmorgan/turnsole/.
+For a full client, see https://github.com/wmorgan/turnsole/.
 
 ADDING EMAIL
 
