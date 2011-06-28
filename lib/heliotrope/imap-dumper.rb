@@ -182,7 +182,7 @@ class IMAPDumper
         puts "; requesting messages #{query.inspect} from imap server"
         startt = Time.now
         imapdata = begin
-          @imap.uid_fetch query, imap_query_columns
+          @imap.uid_fetch(query, imap_query_columns) || []
         rescue Net::IMAP::NoResponseError => e
           puts "warning: skipping messages #{query}: #{e.message}"
           []
