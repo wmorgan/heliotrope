@@ -454,8 +454,10 @@ private
       link_to_search "~#{l}", "+#{l}"
     end.join(" ")
 
-    subject = link_to_threadview thread[:thread_id], thread[:subject][0, MAX_SUBJECT_WIDTH]
-    snippet = (thread[:snippet] || "?") # [0, MAX_SUBJECT_WIDTH - thread[:subject].size]
+    subject = thread[:subject][0, MAX_SUBJECT_WIDTH]
+    subject = "(no subject)" if subject =~ /^\s*$/
+    subject = link_to_threadview thread[:thread_id], subject
+    snippet = (thread[:snippet] || "?")
 
     date = escape_html Time.at(thread[:date]).strftime("%Y/%m/%d %H:%M")
 
