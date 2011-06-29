@@ -17,10 +17,9 @@ class Message
     @m = RMail::Parser.read @rawbody
 
     @msgid = find_msgids(decode_header(validate_field(:message_id, @m.header["message-id"]))).first
-    @safe_msgid = munge_msgid @msgid
-
     ## this next error happens if we have a field, but we can't find a <something> in it
     raise InvalidMessageError, "can't parse msgid: #{@m.header['message-id']}" unless @msgid
+    @safe_msgid = munge_msgid @msgid
 
     @from = Person.from_string decode_header(validate_field(:from, @m.header["from"]))
     @date = begin
