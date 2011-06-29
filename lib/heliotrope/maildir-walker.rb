@@ -46,9 +46,11 @@ private
     File.open(fn, "r:BINARY") do |f|
       while(l = f.gets)
         if l =~ /^Date:\s+(.+\S)\s*$/
-          date = $1
-          pdate = Time.parse($1)
-          return pdate
+          return begin
+            Time.parse($1)
+          rescue
+            Time.at 0
+          end
         end
       end
     end
