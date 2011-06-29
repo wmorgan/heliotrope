@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 require 'time'
 
 module Heliotrope
@@ -45,7 +43,7 @@ private
   end
 
   def get_date_in_file fn
-    File.open(fn) do |f|
+    File.open(fn, "r:BINARY") do |f|
       while(l = f.gets)
         if l =~ /^Date:\s+(.+\S)\s*$/
           date = $1

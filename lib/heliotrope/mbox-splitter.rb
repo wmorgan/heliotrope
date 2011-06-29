@@ -1,5 +1,3 @@
-# encoding: UTF-8
-
 module Heliotrope
 
 ## a single mbox message on a stream
