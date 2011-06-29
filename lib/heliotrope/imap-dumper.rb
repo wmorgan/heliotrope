@@ -120,6 +120,8 @@ class IMAPDumper
     @msgs = []
   end
 
+  attr_reader :folder
+
   def save!
     return unless @last_added_uid && @last_uidvalidity
 
@@ -140,7 +142,7 @@ class IMAPDumper
     puts "; login as #{@username} ..."
     @imap.login @username, @password
 
-    @imap.examine @folder
+    @imap.examine folder
 
     @uidvalidity = @imap.responses["UIDVALIDITY"].first
     @uidnext = @imap.responses["UIDNEXT"].first

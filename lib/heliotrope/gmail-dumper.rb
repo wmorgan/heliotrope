@@ -2,10 +2,16 @@ module Heliotrope
 class GMailDumper < IMAPDumper
   GMAIL_HOST = "imap.gmail.com"
   GMAIL_PORT = 993
-  GMAIL_FOLDER = "[Gmail]/All Mail"
 
   def initialize opts
-    super opts.merge(:host => GMAIL_HOST, :port => GMAIL_PORT, :ssl => true, :folder => GMAIL_FOLDER)
+    super opts.merge(:host => GMAIL_HOST, :port => GMAIL_PORT, :ssl => true, :folder => "none")
+  end
+
+  def folder
+    folders = @imap.xlist "", "*"
+    allmail = folders.find { |x| x.attr.include? :Allmail }
+    raise "can't find the all-mail folder" unless allmail
+    allmail.name
   end
 
   def imap_query_columns
