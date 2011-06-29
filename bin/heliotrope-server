@@ -572,7 +572,7 @@ Usage: #{$0} [options]
 
 Where options include:
 EOS
-  opt :host, "Host interface to listen on", :default => "0.0.0.0", :short => "-H"
+  opt :host, "Host interface to listen on", :default => "localhost", :short => "-H"
   opt :port, "Port to listen on", :default => 8042
   opt :dir, "Base directory for all index files", :default => "."
   opt :mode, "Runtime mode", :default => "development"
@@ -605,4 +605,4 @@ trap(:INT) do
   end
 end
 
-handler.run app, :Port => opts.port
+handler.run app, :Port => opts.port, :Host => opts.host
