@@ -149,6 +149,10 @@ begin
         end
       rescue Heliotrope::InvalidMessageError => e
         num_bad += 1
+      rescue Exception => e
+        File.open("bad-message.txt", "w") { |f| f.write rawbody }
+        $stderr.puts "* wrote broken message to bad-message.txt"
+        raise e
       end
     else
       response = RestClient.post server_url, :message => rawbody, :state => state.to_json, :labels => labels.to_json
