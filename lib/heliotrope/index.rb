@@ -460,7 +460,7 @@ private
   ## roots for the cases when we have seen multiple children but not the
   ## parent.
   def build_thread_structure_from safe_msgid, seen={}
-    return [] if seen[safe_msgid]
+    return nil if seen[safe_msgid]
 
     docid = load_int "docid/#{safe_msgid}"
     children = load_set "cmsgids/#{safe_msgid}"
