@@ -539,6 +539,7 @@ private
   def get_indexable_text thing
     orig = thing.indexable_text
     transformed = @hooks.run "transform-text", :text => orig
+    transformed = Decoder.encode_as_utf8 transformed
     transformed || orig
   end
 

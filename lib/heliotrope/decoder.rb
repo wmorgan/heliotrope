@@ -11,6 +11,15 @@ class Decoder
     @in_ruby19_hell
   end
 
+  def encode_as_utf8 s
+    return unless s
+    if in_ruby19_hell?
+      s.encode Encoding::UTF_8
+    else
+      s
+    end
+  end
+
   ## here it is, ladies and gentlemen: the panacea to all your ruby 1.9 string
   ## encoding woes.
   ##

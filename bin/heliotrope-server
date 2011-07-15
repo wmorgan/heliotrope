@@ -142,6 +142,7 @@ class HeliotropeServer < Sinatra::Base
     raise RequestError, "need a query" unless query
 
     transformed = @hooks.run "transform-query", :query => query
+    transformed = Heliotrope::Decoder.encode_as_utf8 transformed
     transformed || query
   end
 
