@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'fileutils'
-require 'heliotrope'
+require 'digest/md5'
+require "heliotrope"
 
 include Heliotrope
 
@@ -17,6 +18,7 @@ class HeliotropeTest < ::Test::Unit::TestCase
         :encrypted? => false,
 
         :msgid => "msg-#{@@ids += 1}",
+        :safe_msgid => Digest::MD5.hexdigest("msg-#{@@ids += 1}"),
         :from => Person.from_string("Egg Zample <egg@example.com>"),
         :to => Person.from_string("Eggs Ample <eggs@example.com>"),
         :cc => [],
@@ -27,7 +29,8 @@ class HeliotropeTest < ::Test::Unit::TestCase
         :direct_recipients => [],
         :indirect_recipients => [],
         :snippet => "i love mice",
-        :refs => []
+        :refs => [],
+        :safe_refs => [],
       }.merge opts
 
       @opts[:recipients] ||= ([@opts[:to]] + @opts[:cc] + @opts[:bcc]).flatten.compact
