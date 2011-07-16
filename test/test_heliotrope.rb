@@ -18,7 +18,6 @@ class HeliotropeTest < ::Test::Unit::TestCase
         :encrypted? => false,
 
         :msgid => "msg-#{@@ids += 1}",
-        :safe_msgid => Digest::MD5.hexdigest("msg-#{@@ids += 1}"),
         :from => Person.from_string("Egg Zample <egg@example.com>"),
         :to => Person.from_string("Eggs Ample <eggs@example.com>"),
         :cc => [],
@@ -30,11 +29,13 @@ class HeliotropeTest < ::Test::Unit::TestCase
         :indirect_recipients => [],
         :snippet => "i love mice",
         :refs => [],
-        :safe_refs => [],
       }.merge opts
 
       @opts[:recipients] ||= ([@opts[:to]] + @opts[:cc] + @opts[:bcc]).flatten.compact
     end
+
+    def safe_msgid; Digest::MD5.hexdigest msgid end
+    def safe_refs; refs.map { |r| Digest::MD5.hexdigest r } end
 
     def method_missing m, *a
       raise "no value for #{m.inspect}" unless @opts.member? m
