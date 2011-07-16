@@ -172,9 +172,13 @@ private
     if part.multipart?
       if mime_type_for(part) =~ /multipart\/alternative/
         target = part.body.find { |p| mime_type_for(p).index(preferred_type) } || part.body.first
-        decode_mime_parts target, preferred_type, level + 1
+        if target # this can be nil
+          decode_mime_parts target, preferred_type, level + 1
+        else
+          []
+        end
       else # decode 'em all
-        part.body.map { |subpart| decode_mime_parts subpart, preferred_type, level + 1 }.flatten 1
+        part.body.compact.map { |subpart| decode_mime_parts subpart, preferred_type, level + 1 }.flatten 1
       end
     else
       type = mime_type_for part
