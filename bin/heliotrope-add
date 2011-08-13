@@ -109,9 +109,12 @@ end
 
 metaindex = zmbox = nil
 if opts.dir
+  FileUtils.mkdir_p opts.dir
+  store = LevelDB::DB.new File.join(opts.dir, "store")
+  index = Whistlepig::Index.new File.join(opts.dir, "index")
   hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
-  metaindex = Heliotrope::MetaIndex.new opts.dir, hooks
-  zmbox = Heliotrope::ZMbox.new File.join(opts.dir, "messages")
+  metaindex = Heliotrope::MetaIndex.new store, index, hooks
+  zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
 end
 
 server_url = "http://#{opts.host}:#{opts.port}/message.json"

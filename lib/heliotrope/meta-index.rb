@@ -3,7 +3,6 @@
 require 'whistlepig'
 require 'leveldb'
 require 'set'
-require 'fileutils'
 
 class Array
   def ordered_uniq
@@ -37,15 +36,9 @@ class MetaIndex
 
   SNIPPET_MAX_SIZE = 100 # chars
 
-  def initialize base_dir, hooks, opts={}
-    FileUtils.mkdir_p base_dir
-    #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
-    #@store = PStore.new File.join(base_dir, "pstore") # sucks
-    #@store = OklahomaMixer.open File.join(base_dir, "store.tch")
-
-    name = opts[:name] || "index"
-    @store = LevelDB::DB.new File.join(base_dir, "store")
-    @index = Whistlepig::Index.new File.join(base_dir, name)
+  def initialize store, index, hooks, opts={}
+    @store = store
+    @index = index
     @hooks = hooks
     @query = nil # we always have (at most) one active query
     @debug = false
