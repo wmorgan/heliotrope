@@ -24,7 +24,7 @@ class Array
 end
 
 module Heliotrope
-class Index
+class MetaIndex
   ## these are things that can be set on a per-message basis. each one
   ## corresponds to a particular label, but labels are propagated at the
   ## thread level whereas state is not.
@@ -37,13 +37,15 @@ class Index
 
   SNIPPET_MAX_SIZE = 100 # chars
 
-  def initialize base_dir, hooks
+  def initialize base_dir, hooks, opts={}
     FileUtils.mkdir_p base_dir
     #@store = Rufus::Tokyo::Cabinet.new File.join(base_dir, "pstore") # broken
     #@store = PStore.new File.join(base_dir, "pstore") # sucks
     #@store = OklahomaMixer.open File.join(base_dir, "store.tch")
+
+    name = opts[:name] || "index"
     @store = LevelDB::DB.new File.join(base_dir, "store")
-    @index = Whistlepig::Index.new File.join(base_dir, "index")
+    @index = Whistlepig::Index.new File.join(base_dir, name)
     @hooks = hooks
     @query = nil # we always have (at most) one active query
     @debug = false

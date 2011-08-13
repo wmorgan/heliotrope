@@ -107,11 +107,11 @@ else
   Heliotrope::MBoxStream.new $stdin
 end
 
-index = store = nil
+metaindex = zmbox = nil
 if opts.dir
   hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
-  index = Heliotrope::Index.new opts.dir, hooks
-  store = Heliotrope::Store.new File.join(opts.dir, "messages")
+  metaindex = Heliotrope::MetaIndex.new opts.dir, hooks
+  zmbox = Heliotrope::ZMbox.new File.join(opts.dir, "messages")
 end
 
 server_url = "http://#{opts.host}:#{opts.port}/message.json"
@@ -140,11 +140,11 @@ begin
     if opts.dir
      begin
        message = Heliotrope::Message.new(rawbody).parse!
-       if index.contains_safe_msgid? message.safe_msgid
+       if metaindex.contains_safe_msgid? message.safe_msgid
           num_seen += 1
         else
-          loc = store.add rawbody
-          index.add_message message, state, labels, :loc => loc
+          loc = zmbox.add rawbody
+          metaindex.add_message message, state, labels, :loc => loc
           num_indexed += 1
         end
       rescue Heliotrope::InvalidMessageError => e

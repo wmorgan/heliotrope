@@ -3,8 +3,10 @@
 require 'stringio'
 require 'zlib'
 
+## a simple mbox with compressed messages
+
 module Heliotrope
-class Store
+class ZMBox
   def initialize fn
     @io = File.open fn, "a+:BINARY"
   end

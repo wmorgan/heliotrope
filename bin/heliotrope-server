@@ -18,9 +18,9 @@ end
 class HeliotropeServer < Sinatra::Base
   API_VERSION = 0.1
 
-  def initialize index, store, hooks
-    @index = index
-    @store = store
+  def initialize metaindex, zmbox, hooks
+    @metaindex = metaindex
+    @zmbox = zmbox
     @hooks = hooks
     @search_state = [] # keep this around for optimization purposes
     super()
@@ -48,7 +48,7 @@ class HeliotropeServer < Sinatra::Base
     content_type :json
     { :response => :ok,
       :status => :up,
-      :index_version => @index.version,
+      :index_version => @metaindex.version,
       :version => API_VERSION.to_s
     }.to_json
   end
@@ -72,7 +72,7 @@ class HeliotropeServer < Sinatra::Base
 
     begin
       message = raw_body_to_message rawbody
-      if @index.contains_safe_msgid? message.safe_msgid
+      if @metaindex.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
         run_sendmail! rawbody, message, force_recipients
@@ -109,7 +109,7 @@ class HeliotropeServer < Sinatra::Base
 
     begin
       message = raw_body_to_message rawbody
-      if @index.contains_safe_msgid? message.safe_msgid
+      if @metaindex.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
         add_message message, rawbody, labels, state, extra
@@ -125,9 +125,9 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def add_message message, rawbody, labels, state, extra
-    loc = @store.add rawbody
+    loc = @zmbox.add rawbody
     extra.merge! :loc => loc
-    doc_id, thread_id = @index.add_message message, state, labels, extra
+    doc_id, thread_id = @metaindex.add_message message, state, labels, extra
     { :response => :ok, :status => :unseen, :doc_id => doc_id, :thread_id => thread_id }
   end
 
@@ -158,10 +158,10 @@ class HeliotropeServer < Sinatra::Base
     continued = false
     results = if @search_state == [query.parsed_query_s, start]
       continued = true
-      @index.get_some_results num
+      @metaindex.get_some_results num
     else
-      @index.set_query query
-      @index.get_some_results(start + num)[start, num]
+      @metaindex.set_query query
+      @metaindex.get_some_results(start + num)[start, num]
     end
     elapsed = Time.now - startt
     printf "search(#{query.parsed_query_s}, #{start}, #{num}) took %.1fms\n", (elapsed * 1000)
@@ -176,7 +176,7 @@ class HeliotropeServer < Sinatra::Base
 
   get "/size.json" do
     content_type :json
-    { :response => :ok, :size => @index.size }.to_json
+    { :response => :ok, :size => @metaindex.size }.to_json
   end
 
   get "/search.json" do
@@ -194,8 +194,8 @@ class HeliotropeServer < Sinatra::Base
     query = get_query_from_params
     query = Heliotrope::Query.new "body", query
     startt = Time.now
-    @index.set_query query
-    count = @index.count_results
+    @metaindex.set_query query
+    count = @metaindex.count_results
     elapsed = Time.now - startt
     printf "count(#{query.parsed_query_s}) took %.1fms\n", (elapsed * 1000)
     @search_state = nil # don't confuse this with the regular search stuff
@@ -262,11 +262,11 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def get_thread_summary thread_id
-    @index.load_thread_messageinfos(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+    @metaindex.load_thread_messageinfos(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
   end
 
   def get_threadinfo thread_id
-    threadinfo = @index.load_threadinfo(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
+    threadinfo = @metaindex.load_threadinfo(thread_id.to_i) or raise Sinatra::NotFound, "can't find thread #{thread_id.inspect}"
     ## the structure field for long threads is deeply nested, and the
     ## json encoder complains about deeply-nested structures.  we could
     ## raise its nesting limit, but this field isn't needed by anyone
@@ -277,7 +277,7 @@ class HeliotropeServer < Sinatra::Base
   end
 
   def get_message_summary message_id
-    @index.load_messageinfo(message_id.to_i) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
+    @metaindex.load_messageinfo(message_id.to_i) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
   end
 
   get "/message/:message_id.json" do |message_id|
@@ -297,7 +297,7 @@ class HeliotropeServer < Sinatra::Base
     message = get_message_summary(message_id) or raise Sinatra::NotFound, "can't find message #{message_id.inspect}"
 
     begin
-      threadinfo = @index.load_threadinfo(message[:thread_id])
+      threadinfo = @metaindex.load_threadinfo(message[:thread_id])
       docids = threadinfo[:structure].flatten
       idx = docids.index(message_id) + 1
       idx += 1 while(docids[idx] && (docids[idx] < 0))
@@ -332,18 +332,18 @@ class HeliotropeServer < Sinatra::Base
   get "/message/:message_id/raw" do |message_id|
     content_type :text
     message = get_message_summary message_id
-    @store.read message[:loc]
+    @zmbox.read message[:loc]
   end
 
   get "/labels.json" do
     content_type :json
-    { :labels => @index.all_labels, :response => :ok }.to_json
+    { :labels => @metaindex.all_labels, :response => :ok }.to_json
   end
 
   post "/labels/prune.json" do
     content_type :json
-    @index.prune_labels!
-    { :labels => @index.all_labels, :response => :ok }.to_json
+    @metaindex.prune_labels!
+    { :labels => @metaindex.all_labels, :response => :ok }.to_json
   end
 
   post "/thread/:thread_id/labels.json" do |thread_id|
@@ -353,7 +353,7 @@ class HeliotropeServer < Sinatra::Base
     labels = parse_json_set labels
 
     thread = get_thread_summary thread_id # ensure it exists...
-    @index.update_thread_labels thread_id, labels
+    @metaindex.update_thread_labels thread_id, labels
 
     get_threadinfo(thread_id).merge(:response => :ok).to_json
   end
@@ -365,7 +365,7 @@ class HeliotropeServer < Sinatra::Base
     state = parse_json_set state
 
     thread = get_thread_summary thread_id # ensure it exists...
-    @index.update_thread_state thread_id, state
+    @metaindex.update_thread_state thread_id, state
 
     get_threadinfo(thread_id).merge(:response => :ok).to_json
   end
@@ -377,7 +377,7 @@ class HeliotropeServer < Sinatra::Base
     state = parse_json_set state
 
     message = get_message_summary message_id # ensure it exists...
-    @index.update_message_state(message_id, state)
+    @metaindex.update_message_state(message_id, state)
 
     get_message_summary(message_id).merge(:response => :ok).to_json
   end
@@ -393,7 +393,7 @@ private
   end
 
   def load_actual_message offset
-    rawbody = @store.read offset
+    rawbody = @zmbox.read offset
     Heliotrope::Message.new(rawbody).parse!
   end
 
@@ -580,9 +580,9 @@ EOS
 end
 
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
-index = Heliotrope::Index.new opts.dir, hooks
-store = Heliotrope::Store.new File.join(opts.dir, "messages")
-server = HeliotropeServer.new index, store, hooks
+metaindex = Heliotrope::MetaIndex.new opts.dir, hooks
+zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
+server = HeliotropeServer.new metaindex, zmbox, hooks
 
 app = if opts.mode == "development"
   Rack::Builder.new do
