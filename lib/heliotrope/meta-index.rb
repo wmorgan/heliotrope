@@ -265,6 +265,13 @@ class MetaIndex
     write_set "labellist", pruned_labels
   end
 
+  def indexable_text_for thing
+    orig = thing.indexable_text
+    transformed = @hooks.run "transform-text", :text => orig
+    transformed = Decoder.encode_as_utf8 transformed
+    transformed || orig
+  end
+
 private
 
   def really_update_message_state docid, state
@@ -522,21 +529,14 @@ private
     startt = Time.now
     entry = Whistlepig::Entry.new
     entry.add_string "msgid", message.safe_msgid
-    entry.add_string "from", get_indexable_text(message.from).downcase
-    entry.add_string "to", message.recipients.map { |x| get_indexable_text x }.join(" ").downcase
+    entry.add_string "from", indexable_text_for(message.from).downcase
+    entry.add_string "to", message.recipients.map { |x| indexable_text_for x }.join(" ").downcase
     entry.add_string "subject", message.subject.downcase
     entry.add_string "date", message.date.to_s
-    entry.add_string "body", get_indexable_text(message).downcase
+    entry.add_string "body", indexable_text_for(message).downcase
     @index_time += Time.now - startt
 
     @index.add_entry entry
-  end
-
-  def get_indexable_text thing
-    orig = thing.indexable_text
-    transformed = @hooks.run "transform-text", :text => orig
-    transformed = Decoder.encode_as_utf8 transformed
-    transformed || orig
   end
 
   def write_messageinfo! message, state, docid, extra
