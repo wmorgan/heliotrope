@@ -211,6 +211,7 @@ class MetaIndex
     return unless contains_key? key
     h = load_hash key
     h.merge :state => load_set("state/#{docid}"),
+      :labels => load_set("mlabels/#{docid}"),
       :thread_id => load_int("threadid/#{docid}"),
       :snippet => load_string("msnip/#{docid}"),
       :message_id => docid
