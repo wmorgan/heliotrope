@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+# encoding: UTF-8
+
+require 'rubygems'
+require 'trollop'
+require 'rest_client'
+require "heliotrope"
+require 'json'
+
+opts = Trollop::options do
+  banner <<EOS
+Rebuilds the Whistlepig (realtime search) index for the current store. Does not
+change any data, but will skip building messages marked as deleted or spam by
+default.
+
+Useful if you've added documents out of order and wish to reorder them, if
+the index has become corrupted somehow, or as a first step towards removing
+deleted/purged files from your server.
+
+Usage: #{$0} [options]
+
+Where options include:
+EOS
+  opt :dir, "Base directory for all index files", :default => "."
+  opt :reorder, "Reorder all documents based on date header"
+  opt :index_deleted, "Index deleted messages rather than skipping them"
+  opt :index_spam, "Index spam messages rather than skipping them"
+  opt :verbose, "Enable verbose output"
+end
+
+puts "Loading heliotrope data..."
+store = LevelDB::DB.new File.join(opts.dir, "store")
+index = Whistlepig::Index.new File.join(opts.dir, "index-new")
+hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
+metaindex = Heliotrope::MetaIndex.new store, nil, hooks # nil index!!!!
+zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
+puts "Scanning over all messages..."
+
+doc_id = 0
+num_deleted = num_spam = 0
+startt = lastt = Time.now
+while true
+  doc_id += 1
+
+  metainfo = metaindex.load_messageinfo doc_id
+  break unless metainfo
+
+  entry, labels = if metainfo[:state].member?("deleted") && !opts.index_deleted
+    num_deleted += 1
+    [Whistlepig::Entry.new, []]
+  elsif  metainfo[:state].member?("spam") && !opts.index_spam
+    num_spam += 1
+    [Whistlepig::Entry.new, []]
+  else
+    rawbody = zmbox.read metainfo[:loc]
+    rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
+    message = Heliotrope::Message.new(rawbody).parse!
+    entry = Whistlepig::Entry.new
+    entry.add_string "msgid", message.safe_msgid
+    entry.add_string "from", metaindex.indexable_text_for(message.from).downcase
+    entry.add_string "to", message.recipients.map { |x| metaindex.indexable_text_for x }.join(" ").downcase
+    entry.add_string "subject", message.subject.downcase
+    entry.add_string "date", message.date.to_s
+    entry.add_string "body", metaindex.indexable_text_for(message).downcase
+    [entry, metainfo[:labels] + metainfo[:state]]
+  end
+
+  this_docid = index.add_entry entry
+  raise "id mismatch: got #{this_docid}, expecting #{doc_id}" if this_docid != doc_id
+
+  labels.each { |l| index.add_label doc_id, l }
+
+  if (Time.now - lastt) > 5
+    elapsed = Time.now - startt
+    num_indexed = doc_id - num_deleted - num_spam
+  printf "reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f m/s\n", num_indexed, num_spam, num_deleted, elapsed, num_indexed / elapsed
+    lastt = Time.now
+  end
+end
