@@ -56,7 +56,6 @@ while true
     rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
     message = Heliotrope::Message.new(rawbody).parse!
     entry = Whistlepig::Entry.new
-    entry.add_string "msgid", message.safe_msgid
     entry.add_string "from", metaindex.indexable_text_for(message.from).downcase
     entry.add_string "to", message.recipients.map { |x| metaindex.indexable_text_for x }.join(" ").downcase
     entry.add_string "subject", message.subject.downcase

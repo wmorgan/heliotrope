@@ -528,7 +528,6 @@ private
     ## make the entry
     startt = Time.now
     entry = Whistlepig::Entry.new
-    entry.add_string "msgid", message.safe_msgid
     entry.add_string "from", indexable_text_for(message.from).downcase
     entry.add_string "to", message.recipients.map { |x| indexable_text_for x }.join(" ").downcase
     entry.add_string "subject", message.subject.downcase
