@@ -27,20 +27,24 @@ EOS
 end
 
 include Heliotrope
+store = LevelDB::DB.new File.join(opts.dir, "store")
+index = Whistlepig::Index.new File.join(opts.dir, "index")
 hooks = Hooks.new File.join(opts.dir, "hooks")
-index = Index.new opts.dir, hooks
-store = Store.new File.join(opts.dir, "messages")
+metaindex = MetaIndex.new store, index, hooks
+zmbox = ZMBox.new File.join(opts.dir, "messages")
 
 puts <<EOS
 Heliotrope console started.
 
-'index' is the index
-'store' is the store
+'index'     is the whistlepig index
+'metaindex' is the metaindex
+'store'     is the levelDB store
+'zmbox'     is the message store
 
 Search:
   q = Query.new "body", "hello"
-  index.set_query q
-  results = index.get_some_results 5
+  metaindex.set_query q
+  results = metaindex.get_some_results 5
 
 The results are an array of threadinfo hashes.
 Look at a single threadinfo:
@@ -49,7 +53,7 @@ Look at a single threadinfo:
   t[:date]
 
 Get the messageinfos for a thread:
-  mi = index.load_thread_messageinfos t[:thread_id]
+  mi = metaindex.load_thread_messageinfos t[:thread_id]
 
 The messageinfos are nested to represent the thread structure.
 Look at a single messageinfo:
@@ -57,12 +61,12 @@ Look at a single messageinfo:
   m[:from]
   m[:date]
 
-To load the actual content of a message, we go to the store.
-  body = store.read m[:loc]
+To load the actual content of a message, we go to the message store.
+  body = zmbox.read m[:loc]
 
 Have fun and be safe!
 
-Index contains #{index.size} messages.
+MetaIndex contains #{metaindex.size} messages.
 EOS
 
 begin
