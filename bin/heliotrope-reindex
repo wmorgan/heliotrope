@@ -5,28 +5,29 @@ require 'rubygems'
 require 'trollop'
 require 'rest_client'
 require "heliotrope"
+require 'fileutils'
 require 'json'
 
 opts = Trollop::options do
   banner <<EOS
-Rebuilds the Whistlepig (realtime search) index for the current store. Does not
-change any data, but will skip building messages marked as deleted or spam by
-default.
+Rebuilds the Whistlepig index for the current store. Does not change any data,
+but will skip messages marked as deleted or spam by default.
 
-Useful if you've added documents out of order and wish to reorder them, if
-the index has become corrupted somehow, or as a first step towards removing
-deleted/purged files from your server.
+Useful if you've added documents out of order and wish to reorder them, or if
+the index has become corrupted.
 
 Usage: #{$0} [options]
 
 Where options include:
 EOS
-  opt :dir, "Base directory for all index files", :default => "."
+  opt :dir, "Base directory for all index files", :default => ".", :short => "d"
   opt :reorder, "Reorder all documents based on date header"
   opt :index_deleted, "Index deleted messages rather than skipping them"
-  opt :index_spam, "Index spam messages rather than skipping them"
+  opt :index_spam, "Index spam messages rather than skipping them", :short => "s"
+  opt :num, "Only process this many messages", :type => :int, :short => "n"
   opt :verbose, "Enable verbose output"
 end
+Trollop::die "invalid argument: #{ARGV.first}" unless ARGV.empty?
 
 class Loader
   def initialize metaindex, zmbox, opts={}
@@ -54,7 +55,7 @@ private
     doc_id = 0
     num_deleted = num_spam = 0
     startt = lastt = Time.now
-    puts "; indexing..."
+    puts "Reindexing..."
     while true
       doc_id += 1
       entry, labels = get_message_summary_for doc_id
@@ -66,16 +67,16 @@ private
   def each_message_sorted
     ids_and_dates = []
     doc_id = 0
-    puts "; loading dates..."
+    puts "Loading dates..."
     while true
       doc_id += 1
       metainfo = @metaindex.load_messageinfo doc_id
       break unless metainfo
       ids_and_dates << [doc_id, metainfo[:date]]
     end
-    puts "; sorting..."
+    puts "Sorting..."
     ids_and_dates.sort_by! { |id, date| date }
-    puts "; indexing..."
+    puts "Reindexing..."
     ids_and_dates.each do |id, date|
       entry, labels = get_message_summary_for id
       yield entry, labels
@@ -107,9 +108,14 @@ private
   end
 end
 
-puts "Loading heliotrope data..."
+FileUtils.mkdir_p File.join(opts.dir, "index-new")
 store = LevelDB::DB.new File.join(opts.dir, "store")
-index = Whistlepig::Index.new File.join(opts.dir, "index-new")
+
+new_index_fn = File.join(opts.dir, "index-new", "whistlepig")
+if Whistlepig::Index.exists? new_index_fn
+  abort "Error: a reindex already exists in #{File.join opts.dir, "index-new"}. Delete that directory first."
+end
+index = Whistlepig::Index.new new_index_fn
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
 metaindex = Heliotrope::MetaIndex.new store, nil, hooks # nil index! (for "security")
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
@@ -125,10 +131,19 @@ loader.each_message do |entry, labels|
 
   if (Time.now - lastt) > 5
     elapsed = Time.now - startt
-    num_indexed = doc_id - loader.num_deleted - loader.num_spam
-    printf "reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f m/s\n", num_indexed, loader.num_spam, loader.num_deleted, elapsed, num_indexed / elapsed
+    num_indexed = num_docs - loader.num_deleted - loader.num_spam
+    printf "; reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f m/s\n", num_indexed, loader.num_spam, loader.num_deleted, elapsed, num_indexed / elapsed
     lastt = Time.now
   end
+
+  break if opts.num && num_docs >= opts.num
 end
 
-puts "; done!"
+elapsed = Time.now - startt
+num_indexed = num_docs - loader.num_deleted - loader.num_spam
+printf "; reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f m/s\n", num_indexed, loader.num_spam, loader.num_deleted, elapsed, num_indexed / elapsed
+
+puts <<EOS
+Done!
+To use the new index, replace #{File.join opts.dir, "index"} with #{File.join opts.dir, "index-new"}.
+EOS
