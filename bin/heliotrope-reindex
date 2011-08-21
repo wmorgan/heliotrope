@@ -28,51 +28,107 @@ EOS
   opt :verbose, "Enable verbose output"
 end
 
+class Loader
+  def initialize metaindex, zmbox, opts={}
+    @metaindex = metaindex
+    @zmbox = zmbox
+    @load_spam = opts[:load_spam]
+    @load_deleted = opts[:load_deleted]
+    @sort = opts[:sort]
+    @num_deleted = @num_spam = 0
+  end
+
+  attr_reader :num_deleted, :num_spam
+
+  def each_message(&b)
+    if @sort
+      each_message_sorted(&b)
+    else
+      each_message_regular(&b)
+    end
+  end
+
+private
+
+  def each_message_regular
+    doc_id = 0
+    num_deleted = num_spam = 0
+    startt = lastt = Time.now
+    puts "; indexing..."
+    while true
+      doc_id += 1
+      entry, labels = get_message_summary_for doc_id
+      break unless entry
+      yield entry, labels
+    end
+  end
+
+  def each_message_sorted
+    ids_and_dates = []
+    doc_id = 0
+    puts "; loading dates..."
+    while true
+      doc_id += 1
+      metainfo = @metaindex.load_messageinfo doc_id
+      break unless metainfo
+      ids_and_dates << [doc_id, metainfo[:date]]
+    end
+    puts "; sorting..."
+    ids_and_dates.sort_by! { |id, date| date }
+    puts "; indexing..."
+    ids_and_dates.each do |id, date|
+      entry, labels = get_message_summary_for id
+      yield entry, labels
+    end
+  end
+
+  def get_message_summary_for doc_id
+    metainfo = @metaindex.load_messageinfo doc_id
+    return unless metainfo
+
+    entry, labels = if metainfo[:state].member?("deleted") && !@load_deleted
+      @num_deleted += 1
+      [Whistlepig::Entry.new, []]
+    elsif metainfo[:state].member?("spam") && !@load_spam
+      @num_spam += 1
+      [Whistlepig::Entry.new, []]
+    else
+      rawbody = @zmbox.read metainfo[:loc]
+      rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
+      message = Heliotrope::Message.new(rawbody).parse!
+      entry = Whistlepig::Entry.new
+      entry.add_string "from", @metaindex.indexable_text_for(message.from).downcase
+      entry.add_string "to", message.recipients.map { |x| @metaindex.indexable_text_for x }.join(" ").downcase
+      entry.add_string "subject", message.subject.downcase
+      entry.add_string "date", message.date.to_s
+      entry.add_string "body", @metaindex.indexable_text_for(message).downcase
+      [entry, metainfo[:labels] + metainfo[:state]]
+    end
+  end
+end
+
 puts "Loading heliotrope data..."
 store = LevelDB::DB.new File.join(opts.dir, "store")
 index = Whistlepig::Index.new File.join(opts.dir, "index-new")
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
-metaindex = Heliotrope::MetaIndex.new store, nil, hooks # nil index!!!!
+metaindex = Heliotrope::MetaIndex.new store, nil, hooks # nil index! (for "security")
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
-puts "Scanning over all messages..."
+loader = Loader.new metaindex, zmbox, :load_spam => opts.index_spam, :load_deleted => opts.index_deleted, :sort => opts.reorder
 
-doc_id = 0
-num_deleted = num_spam = 0
 startt = lastt = Time.now
-while true
-  doc_id += 1
-
-  metainfo = metaindex.load_messageinfo doc_id
-  break unless metainfo
-
-  entry, labels = if metainfo[:state].member?("deleted") && !opts.index_deleted
-    num_deleted += 1
-    [Whistlepig::Entry.new, []]
-  elsif  metainfo[:state].member?("spam") && !opts.index_spam
-    num_spam += 1
-    [Whistlepig::Entry.new, []]
-  else
-    rawbody = zmbox.read metainfo[:loc]
-    rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
-    message = Heliotrope::Message.new(rawbody).parse!
-    entry = Whistlepig::Entry.new
-    entry.add_string "from", metaindex.indexable_text_for(message.from).downcase
-    entry.add_string "to", message.recipients.map { |x| metaindex.indexable_text_for x }.join(" ").downcase
-    entry.add_string "subject", message.subject.downcase
-    entry.add_string "date", message.date.to_s
-    entry.add_string "body", metaindex.indexable_text_for(message).downcase
-    [entry, metainfo[:labels] + metainfo[:state]]
-  end
-
-  this_docid = index.add_entry entry
-  raise "id mismatch: got #{this_docid}, expecting #{doc_id}" if this_docid != doc_id
-
+num_docs = 0
+loader.each_message do |entry, labels|
+  num_docs += 1
+  doc_id = index.add_entry entry
+  raise "expected doc id #{num_docs} but got #{doc_id}" unless doc_id == num_docs
   labels.each { |l| index.add_label doc_id, l }
 
   if (Time.now - lastt) > 5
     elapsed = Time.now - startt
-    num_indexed = doc_id - num_deleted - num_spam
-  printf "reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f m/s\n", num_indexed, num_spam, num_deleted, elapsed, num_indexed / elapsed
+    num_indexed = doc_id - loader.num_deleted - loader.num_spam
+    printf "reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f m/s\n", num_indexed, loader.num_spam, loader.num_deleted, elapsed, num_indexed / elapsed
     lastt = Time.now
   end
 end
+
+puts "; done!"
