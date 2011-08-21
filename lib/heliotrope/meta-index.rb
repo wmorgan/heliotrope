@@ -277,7 +277,7 @@ private
 
   def is_valid_whistlepig_token? l
     # copy logic from whistlepig's query-parser.lex
-    l =~ /^[^\(\)"\-~:\*][^\(\)":]+$/
+    l =~ /^[^\(\)"\-~:\*][^\(\)":]*$/
   end
 
   def really_update_message_state docid, state
