@@ -614,4 +614,6 @@ trap(:INT) do
   end
 end
 
+puts "MetaIndex contains #{metaindex.size} messages."
+
 handler.run app, :Port => opts.port, :Host => opts.host
