@@ -123,7 +123,7 @@ num_scanned = num_indexed = num_bad = num_seen = 0
 startt = lastt = Time.now
 
 begin
-  puts "; loading mail..."
+  puts "Loading mail..."
   source.load!
 
   source.skip! opts.num_skip if opts.num_skip
@@ -176,7 +176,7 @@ begin
 
     if !source.done? && ((Time.now - lastt) > 5)
       elapsed = Time.now - startt
-      printf "scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
+      printf "; scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
       lastt = Time.now
     end
   end
@@ -185,4 +185,6 @@ ensure
 end
 
 elapsed = Time.now - startt
-printf "scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
+printf "; scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
+
+puts "Done."
