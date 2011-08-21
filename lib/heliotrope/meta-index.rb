@@ -144,6 +144,10 @@ class MetaIndex
   def update_thread_labels threadid, labels
     labels = Set.new(labels) - MESSAGE_STATE
 
+    ## add the labels to the set of all labels we've ever seen. do this
+    ## first because it also does some validation.
+    add_labels_to_labellist! labels
+
     key = "tlabels/#{threadid}"
     old_tlabels = load_set key
     new_tlabels = (old_tlabels & MESSAGE_STATE) + labels
@@ -151,9 +155,6 @@ class MetaIndex
 
     threadinfo = load_hash "thread/#{threadid}"
     write_thread_message_labels! threadinfo[:structure], new_tlabels
-
-    ## add the labels to the set of all labels we've ever seen
-    add_labels_to_labellist! labels
 
     new_tlabels
   end
@@ -274,6 +275,11 @@ class MetaIndex
 
 private
 
+  def is_valid_whistlepig_token? l
+    # copy logic from whistlepig's query-parser.lex
+    l =~ /^[^\(\)"\-~:\*][^\(\)":]+$/
+  end
+
   def really_update_message_state docid, state
     ## update message state
     key = "state/#{docid}"
@@ -333,10 +339,17 @@ private
     write_set "turps/#{threadid}", unread_participants
   end
 
+  class InvalidLabelError < StandardError
+    def initialize label
+      super "#{label} is an invalid label"
+    end
+  end
+
   def add_labels_to_labellist! labels
+    labels.each { |l| raise InvalidLabelError, l unless is_valid_whistlepig_token?(l) }
     key = "labellist"
     labellist = load_set key
-    labellist_new = labellist + labels
+    labellist_new = labellist + labels.select { |l| is_valid_whistlepig_token? l }
     write_set key, labellist_new unless labellist == labellist_new
   end
 

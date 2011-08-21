@@ -354,9 +354,12 @@ class HeliotropeServer < Sinatra::Base
     labels = parse_json_set labels
 
     thread = get_thread_summary thread_id # ensure it exists...
-    @metaindex.update_thread_labels thread_id, labels
-
-    get_threadinfo(thread_id).merge(:response => :ok).to_json
+    begin
+      @metaindex.update_thread_labels thread_id, labels
+      get_threadinfo(thread_id).merge :response => :ok
+    rescue Heliotrope::MetaIndex::InvalidLabelError => e
+      { :response => :error, :message => e.message }
+    end.to_json
   end
 
   post "/thread/:thread_id/state.json" do |thread_id|
