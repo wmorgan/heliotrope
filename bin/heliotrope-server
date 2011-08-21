@@ -452,7 +452,7 @@ private
     end.join(", ")
 
     size = thread[:size]
-    labels = (thread[:labels] - Heliotrope::Index::MESSAGE_STATE).map do |l|
+    labels = (thread[:labels] - Heliotrope::MetaIndex::MESSAGE_STATE).map do |l|
       link_to_search "~#{l}", "+#{l}"
     end.join(" ")
 
