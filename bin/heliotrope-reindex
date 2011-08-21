@@ -108,12 +108,12 @@ private
   end
 end
 
-FileUtils.mkdir_p File.join(opts.dir, "index-new")
+FileUtils.mkdir_p File.join(opts.dir, "index-reindexed")
 store = LevelDB::DB.new File.join(opts.dir, "store")
 
-new_index_fn = File.join(opts.dir, "index-new", "whistlepig")
+new_index_fn = File.join(opts.dir, "index-reindexed", "whistlepig")
 if Whistlepig::Index.exists? new_index_fn
-  abort "Error: a reindex already exists in #{File.join opts.dir, "index-new"}. Delete that directory first."
+  abort "Error: a reindex already exists in #{File.join opts.dir, "index-reindexed"}. Delete that directory first."
 end
 index = Whistlepig::Index.new new_index_fn
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
@@ -145,5 +145,5 @@ printf "; reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f 
 
 puts <<EOS
 Done!
-To use the new index, replace #{File.join opts.dir, "index"} with #{File.join opts.dir, "index-new"}.
+To use the new index, replace #{File.join opts.dir, "index"} with #{File.join opts.dir, "index-reindexed"}.
 EOS
