@@ -199,7 +199,7 @@ private
   end
 
   def mime_type_for part
-    (part.header["content-type"] || "text/plain").gsub(/\s+/, " ").strip
+    (part.header["content-type"] || "text/plain").gsub(/\s+/, " ").strip.downcase
   end
 
   def mime_id_for part
