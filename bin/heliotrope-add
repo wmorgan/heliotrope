@@ -147,6 +147,7 @@ begin
        if metaindex.contains_safe_msgid? message.safe_msgid
           num_seen += 1
         else
+          labels = hooks.run "before-add-message-label", :message => message, :labels => labels, :rawbody => rawbody
           loc = zmbox.add rawbody
           metaindex.add_message message, state, labels, :loc => loc
           num_indexed += 1
