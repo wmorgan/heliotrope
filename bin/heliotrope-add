@@ -82,9 +82,7 @@ EOS
   conflicts :mbox_fn, :maildir_dirs, :imap_host
 end
 
-if opts.mbox_fn || opts.maildir_dirs || opts.imap_host
-  Trollop::die "unknown option #{ARGV.first}" unless ARGV.empty?
-end
+Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
 
 port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
 
