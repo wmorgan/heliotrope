@@ -14,6 +14,7 @@ class MBoxStream
 
   def done?; @stream.eof? end
   def finish!; end
+  def load!; end
 end
 
 ## a custom mbox splitter / from line detector. rmail has one, but it splits on
