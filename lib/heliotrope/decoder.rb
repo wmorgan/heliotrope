@@ -35,7 +35,7 @@ class Decoder
   ## wrong.
   def transcode target_charset, orig_charset, text
     ## normalize some charset names as we see them in email
-    charset = case orig_charset
+    source_charset = case orig_charset
       when /UTF[-_ ]?8/i; "utf-8"
       when /(iso[-_ ])?latin[-_ ]?1$/i; "ISO-8859-1"
       when /iso[-_ ]?8859[-_ ]?15/i; 'ISO-8859-15'
@@ -47,7 +47,7 @@ class Decoder
 
     if in_ruby19_hell?
       ret = begin
-        text.dup.force_encoding(orig_charset).encode(target_charset)
+        text.dup.force_encoding(source_charset).encode(target_charset)
       rescue EncodingError, ArgumentError => e
         nil
       end
@@ -55,9 +55,9 @@ class Decoder
       (ret && ret.valid_encoding?) ? ret : force_to_ascii(text).force_encoding(target_charset)
     else
       begin
-        Iconv.iconv("#{target_charset}//TRANSLIT//IGNORE", orig_charset, text + " ").join[0 .. -2] # work around iconv bug with last two characters
+        Iconv.iconv("#{target_charset}//TRANSLIT//IGNORE", source_charset, text + " ").join[0 .. -2] # work around iconv bug with last two characters
       rescue Errno::EINVAL, Iconv::InvalidEncoding, Iconv::InvalidCharacter, Iconv::IllegalSequence => e
-        #$stderr.puts "WARNING couldn't transcode text from #{orig_charset} to #{target_charset} (#{text[0 ... 20].inspect}...): got #{e.class}: #{e.message}"
+        #$stderr.puts "WARNING couldn't transcode text from #{source_charset} to #{target_charset} (#{text[0 ... 20].inspect}...): got #{e.class}: #{e.message}"
         text = force_to_ascii text
         Iconv.iconv("#{target_charset}//TRANSLIT//IGNORE", "utf-8", text + " ").join[0 .. -2]
       end
