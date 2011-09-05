@@ -58,9 +58,9 @@ private
     puts "Reindexing..."
     while true
       doc_id += 1
-      entry, labels = get_message_summary_for doc_id
-      break unless entry
-      yield entry, labels
+      message, state, labels, loc = get_message_summary_for doc_id
+      break unless message 
+      yield message, state, labels, loc
     end
   end
 
@@ -78,8 +78,9 @@ private
     ids_and_dates.sort_by! { |id, date| date }
     puts "Reindexing..."
     ids_and_dates.each do |id, date|
-      entry, labels = get_message_summary_for id
-      yield entry, labels
+      message, state, labels, loc = get_message_summary_for id
+      break unless message 
+      yield message, state, labels, loc
     end
   end
 
@@ -87,23 +88,17 @@ private
     metainfo = @metaindex.load_messageinfo doc_id
     return unless metainfo
 
-    entry, labels = if metainfo[:state].member?("deleted") && !@load_deleted
+    message, state, labels, loc = if metainfo[:state].member?("deleted") && !@load_deleted
       @num_deleted += 1
-      [Whistlepig::Entry.new, []]
+      [nil, [], [], nil]
     elsif metainfo[:state].member?("spam") && !@load_spam
       @num_spam += 1
-      [Whistlepig::Entry.new, []]
+      [nil, [], [], nil]
     else
       rawbody = @zmbox.read metainfo[:loc]
       rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
       message = Heliotrope::Message.new(rawbody).parse!
-      entry = Whistlepig::Entry.new
-      entry.add_string "from", @metaindex.indexable_text_for(message.from).downcase
-      entry.add_string "to", message.recipients.map { |x| @metaindex.indexable_text_for x }.join(" ").downcase
-      entry.add_string "subject", message.subject.downcase
-      entry.add_string "date", message.date.to_s
-      entry.add_string "body", @metaindex.indexable_text_for(message).downcase
-      [entry, metainfo[:labels] + metainfo[:state]]
+      [message, metainfo[:state], metainfo[:labels], metainfo[:loc]]
     end
   end
 end
@@ -115,19 +110,22 @@ new_index_fn = File.join(opts.dir, "index-reindexed", "whistlepig")
 if Whistlepig::Index.exists? new_index_fn
   abort "Error: a reindex already exists in #{File.join opts.dir, "index-reindexed"}. Delete that directory first."
 end
+if File.exists? File.join(opts.dir, "store-reindexed")
+  abort "Error: a reindex already exists in #{File.join opts.dir, "store-reindexed"}. Delete that directory first."
+end
 index = Whistlepig::Index.new new_index_fn
+store_new = LevelDB::DB.new File.join(opts.dir, "store-reindexed")
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
 metaindex = Heliotrope::MetaIndex.new store, nil, hooks # nil index! (for "security")
+metaindex_new = Heliotrope::MetaIndex.new store_new, index, hooks 
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
 loader = Loader.new metaindex, zmbox, :load_spam => opts.index_spam, :load_deleted => opts.index_deleted, :sort => opts.reorder
 
 startt = lastt = Time.now
 num_docs = 0
-loader.each_message do |entry, labels|
+loader.each_message do |message, state, labels, loc|
   num_docs += 1
-  doc_id = index.add_entry entry
-  raise "expected doc id #{num_docs} but got #{doc_id}" unless doc_id == num_docs
-  labels.each { |l| index.add_label doc_id, l }
+  metaindex_new.add_message message, state, labels, :loc => loc
 
   if (Time.now - lastt) > 5
     elapsed = Time.now - startt
@@ -146,4 +144,5 @@ printf "; reindexed %d messages, skipped %d spam and %d deleted in %.1fs = %.1f 
 puts <<EOS
 Done!
 To use the new index, replace #{File.join opts.dir, "index"} with #{File.join opts.dir, "index-reindexed"}.
+If you also re-ordered, replace #{File.join opts.dir, "store"} with #{File.join opts.dir, "store-reindexed"}. Otherwise, delete store-reindexed. 
 EOS
