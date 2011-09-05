@@ -255,27 +255,34 @@ private
     source_charset = if mt =~ /charset="?(.*?)"?(;|$)/i then $1 else "US-ASCII" end
 
     content = mime_part.decode
-    converted_content = if(converter = CONVERSIONS[[content_type, preferred_type]])
-      send converter, content
+    converted_content, converted_charset = if(converter = CONVERSIONS[[content_type, preferred_type]])
+      send converter, content, source_charset
     else
-      content
+      [content, source_charset]
     end
 
     if content_type =~ /^text\//
-      Decoder.transcode "utf-8", source_charset, converted_content
+      puts "; converting from #{converted_charset} to utf-8: #{converted_content[0..200]}"
+      v = Decoder.transcode "utf-8", converted_charset, converted_content
+      puts "; got: #{v[0..200]}"
+      v
     else
       converted_content
     end
   end
 
-  CMD = "html2text"
-  def html_to_text html
-    puts "; forced to decode html. running #{CMD} on #{html.size}b mime part..."
-    Open3.popen3(CMD) do |inn, out, err|
+  require 'locale'
+  SYSTEM_CHARSET = Locale.current.charset
+  HTML_CONVERSION_CMD = "html2text"
+  def html_to_text html, charset
+    ## ignore charset. html2text produces output in the system charset.
+    #puts "; forced to decode html. running #{HTML_CONVERSION_CMD} on #{html.size}b mime part..."
+    content = Open3.popen3(HTML_CONVERSION_CMD) do |inn, out, err|
       inn.print html
       inn.close
       out.read
     end
+    [content, SYSTEM_CHARSET]
   end
 end
 end

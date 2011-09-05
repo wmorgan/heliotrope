@@ -32,7 +32,7 @@ PREPARING YOURSELF
 2. Install a modern Ruby. I recommend 1.9.2. On Debian-based Linux distros,
    you can try the ruby1.9.1 package. You can download and compile it from
    http://www.ruby-lang.org/en/downloads/ if you are feeling crazy.
-3. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb-ruby`
+3. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb-ruby locale`
 
 GETTING IT
 
