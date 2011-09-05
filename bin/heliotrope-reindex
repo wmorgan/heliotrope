@@ -75,7 +75,7 @@ private
       ids_and_dates << [doc_id, metainfo[:date]]
     end
     puts "Sorting..."
-    ids_and_dates.sort_by! { |id, date| date }
+    ids_and_dates = ids_and_dates.sort_by { |id, date| date }
     puts "Reindexing..."
     ids_and_dates.each do |id, date|
       entry, labels = get_message_summary_for id
