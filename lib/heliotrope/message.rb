@@ -262,10 +262,7 @@ private
     end
 
     if content_type =~ /^text\//
-      puts "; converting from #{converted_charset} to utf-8: #{converted_content[0..200]}"
-      v = Decoder.transcode "utf-8", converted_charset, converted_content
-      puts "; got: #{v[0..200]}"
-      v
+      Decoder.transcode "utf-8", converted_charset, converted_content
     else
       converted_content
     end
