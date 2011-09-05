@@ -28,7 +28,7 @@ PREPARING YOURSELF
 
 0. Find your happy place.
 1. Install html2text. On Debian-based Linux distros, it's `sudo apt-get
-   install html2text`.
+   install html2text`. On OS X, "sudo port html2text" has been known to work.
 2. Install a modern Ruby. I recommend 1.9.2. On Debian-based Linux distros,
    you can try the ruby1.9.1 package. You can download and compile it from
    http://www.ruby-lang.org/en/downloads/ if you are feeling crazy.
