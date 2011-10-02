@@ -9,15 +9,17 @@ spec = Gem::Specification.new do |s|
  s.authors = ["William Morgan"]
  s.summary = "Heliotrope is a personal, threaded, search-centric email server."
  s.homepage = "http://sup.rubyforge.org"
- s.files = Dir["bin/*"] + Dir["lib/*.rb"] + Dir["lib/heliotrope/*.rb"]
- s.executables = []
+ s.files = Dir["lib/*.rb"] + Dir["lib/heliotrope/*.rb"]
+ s.executables = Dir["bin/*"].map { |f| File.basename f }
  s.rubyforge_project = "sup"
  s.description = "Heliotrope is a personal, threaded, search-centric email server."
 
  s.add_dependency 'trollop', '>= 1.16.2'
  s.add_dependency 'whistlepig', '>= 0.7'
  s.add_dependency 'rmail', '>= 1.0.0'
- s.add_dependency 'leveldb', '>= 0.7'
+ s.add_dependency 'leveldb-ruby', '>= 0.7'
+
+ s.add_dependency 'locale'
 
  s.add_dependency 'rest-client'
  s.add_dependency 'rack'
