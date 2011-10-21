@@ -24,20 +24,25 @@ end
 
 opts = Trollop::options do
   banner <<EOS
-Adds an email or a set of emails to a Heliotrope server. By default, takes a
-single message on stdin. Can also submit all the messages in an mbox file, a
-maildir, a GMail account, or an IMAP folder.
+Imports emails to a Heliotrope server directory, from an mbox file, a
+maildir, an IMAP folder, or a GMail account.
 
-For GMail accounts and IMAP folders, will record the last message seen.
-Successive calls will pick up only new messages.
+This is much faster than heliotrope-add, as it writes directly to the
+server's store directory. However, it cannot be run at the same time as
+the server.
+
+Note that Heliotrope only returns threads in the order they were added
+to the index. If you are using this tool to backfill from multiple
+existing stores, you may have to use heliotrope-reindex as the final
+step to sort the messages by date.
 
 Usage: #{$0} [options]
 
 Where options include:
 EOS
-  opt :host, "Heliotrope server host", :default => "localhost", :short => "H"
-  opt :port, "Heliotrope server port", :default => 8042
-  opt :num_skip, "Skip this many many messages and then start adding", :type => Integer, :short => "k"
+  opt :dir, "Don't use the server. Instead, write directly to the store directory.", :type => String, :required => true
+  opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
+  opt :num_skip, "Skip this many many messages and then start indexing", :type => Integer, :short => "k"
   opt :state_fn, "Store any server state in this file (IMAP and Gmail only)", :type => String
   opt :verbose, "Enable verbose output"
 
@@ -70,23 +75,18 @@ EOS
   opt :gmail_username, "GMail username (default: prompt)", :type => String
   opt :gmail_password, "GMail password (default: prompt)", :type => String
 
-  banner <<EOS
-
-If none of the mbox, maildir, IMAP or GMail options are given, will read a
-single message from stdin.
-EOS
-
   conflicts :mbox_fn, :maildir_dirs, :imap_host, :gmail_username
 end
 
 Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
+
+port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
 
 source = if opts.mbox_fn
   Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.mbox_start_offset
 elsif opts.maildir_dirs
   Heliotrope::MaildirWalker.new(*opts.maildir_dirs)
 elsif opts.imap_host
-  port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
   username = opts.imap_username || ask("IMAP username: ")
   password = opts.imap_password || ask_secret("IMAP password: ")
   fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
@@ -97,10 +97,16 @@ elsif opts.gmail_username
   fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
   Heliotrope::GMailDumper.new :username => username, :password => password, :state_fn => fn
 else
-  Heliotrope::MBoxStream.new $stdin
+  Trollop::die "one of --mbox-fn, --maildir, --imap-host, or --gmail-username must be specified"
 end
 
-server_url = "http://#{opts.host}:#{opts.port}/message.json"
+FileUtils.mkdir_p opts.dir
+FileUtils.mkdir_p File.join(opts.dir, "index")
+store = LevelDB::DB.new File.join(opts.dir, "store")
+index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
+hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
+metaindex = Heliotrope::MetaIndex.new store, index, hooks
+zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
 num_scanned = num_indexed = num_bad = num_seen = 0
 startt = lastt = Time.now
 begin
@@ -108,7 +114,7 @@ begin
   source.load!
   source.skip! opts.num_skip if opts.num_skip
 
-  puts "Adding mail..."
+  puts "Importing mail..."
   until source.done?
     rawbody, labels, state, desc = source.next_message
 
@@ -121,21 +127,23 @@ begin
     break if opts.num_messages && num_scanned >= opts.num_messages
     num_scanned += 1
 
-    ## try to avoid being fucked by ruby 1.9
     rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
 
-    response = RestClient.post server_url, :message => rawbody, :state => state.to_json, :labels => labels.to_json
-    response = JSON.parse(response)
-
-    if response["response"] == "ok"
-      if response["status"] == "seen"
+    begin
+      message = Heliotrope::Message.new(rawbody).parse!
+      if metaindex.contains_safe_msgid? message.safe_msgid
         num_seen += 1
       else
+        loc = zmbox.add rawbody
+        metaindex.add_message message, state, labels, :loc => loc
         num_indexed += 1
       end
-    else
+    rescue Heliotrope::InvalidMessageError => e
       num_bad += 1
-      #puts "Error for message at offset #{offset}: " + response["error_message"]
+    rescue Exception => e
+      File.open("bad-message.txt", "w") { |f| f.write rawbody }
+      $stderr.puts "* wrote broken message to bad-message.txt"
+      raise e
     end
 
     if (Time.now - lastt) > 5 # seconds
