@@ -269,7 +269,7 @@ private
   end
 
   require 'locale'
-  SYSTEM_CHARSET = Locale.current.charset
+  SYSTEM_CHARSET = Locale.charset
   HTML_CONVERSION_CMD = "html2text"
   def html_to_text html, charset
     ## ignore charset. html2text produces output in the system charset.
