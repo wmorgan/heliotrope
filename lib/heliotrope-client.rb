@@ -32,7 +32,14 @@ class HeliotropeClient
   end
 
   def send_message message, opts={}
-    post_json "message/send", :message => message, :labels => (opts[:labels] || []).to_json
+    opts[:labels] ||= []
+    opts[:state] ||= []
+    post_json "message/send", :message => message, :labels => opts[:labels].to_json, :state => opts[:state].to_json
+  end
+
+  def bounce_message message, opts={}
+    opts[:force_recipients] ||= []
+    post_json "message/bounce", :message => message, :force_recipients => opts[:force_recipients].to_json
   end
 
   def message_part message_id, part_id

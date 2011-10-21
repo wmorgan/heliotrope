@@ -54,9 +54,6 @@ class HeliotropeServer < Sinatra::Base
     }.to_json
   end
 
-  ## don't like this? write a sendmail hook.
-  SENDMAIL = "sendmail -oem -ti"
-
   ## add a message to the store after sending it. idempotent: if the message
   ## has already been added, reports and error and does nothing. if the send
   ## fails, reports and error and does nothing.
@@ -68,15 +65,12 @@ class HeliotropeServer < Sinatra::Base
     state = JSON.parse(params["state"] || "[]")
     extra = JSON.parse(params["extra"] || "{}")
 
-    ## force_recipients is used for bouncing email
-    force_recipients = JSON.parse(params["force_recipients"] || "[]")
-
     begin
       message = raw_body_to_message rawbody
       if @metaindex.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
-        run_sendmail! rawbody, message, force_recipients
+        run_sendmail! rawbody, message
         add_message message, rawbody, labels, state + ["sent"], extra
       end
     rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
@@ -84,14 +78,42 @@ class HeliotropeServer < Sinatra::Base
     end.to_json
   end
 
+  ## sends a message without adding it to the index, or even checking whether
+  ## it's there or not. accepts a force_recipients argument to override the
+  ## recipients and ignore the To: line.
+  post "/message/bounce.json" do
+    content_type :json
+
+    rawbody = params["message"] or raise RequestError, "need a 'message' param"
+    force_recipients = JSON.parse(params["force_recipients"] || "[]")
+
+    p force_recipients
+
+    begin
+      message = raw_body_to_message rawbody
+      run_sendmail! rawbody, message, force_recipients
+      { :response => :ok }
+    rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
+      { :response => :error, :message => e.message }
+    end.to_json
+  end
+
+  SENDMAIL = "sendmail -oem -ti" # don't like it? write a sendmail hook.
+  SENDMAIL_BOUNCE = "sendmail -oem -i"
   class SendmailFailedError < StandardError; end
-  def run_sendmail! rawbody, message, force_recipients
+
+  def run_sendmail! rawbody, message, force_recipients=[]
     if @hooks.enabled? "sendmail"
       unless @hooks.run "sendmail", :rawbody => rawbody, :message => message, :force_recipients => force_recipients
         raise SendmailFailedError, "sendmail hook was not successful"
       end
     else
-      cmd = SENDMAIL + force_recipients.map { |x| " " + x }.join
+      cmd = if force_recipients.empty?
+        SENDMAIL
+      else
+        SENDMAIL_BOUNCE + force_recipients.map { |x| " " + x }.join
+      end
+      puts "; running: `#{cmd}` on a #{rawbody.size}b message"
       ret = IO.popen(cmd, "w") { |p| p.puts rawbody }
       unless $?.success?
         raise SendmailFailedError, "sendmail command failed with non-zero exit status"
