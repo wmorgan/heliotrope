@@ -122,6 +122,20 @@ class MetaIndex
     new_state
   end
 
+  ## redirects only happen when we have to reindex stuff. you only have
+  ## to follow them when you get the docids out of the search index--
+  ## docids from other sources are ok.
+  def redirect! old_doc_id, doc_id
+    return if old_doc_id.to_i == doc_id.to_i
+    write_int "redir/#{doc_id}", old_doc_id
+  end
+
+  ## get a threadid from a docid, following redirects.
+  def thread_id_for_doc_id docid
+    docid = load_int("redir/#{docid}") || docid
+    load_int "threadid/#{docid}"
+  end
+
   def update_thread_state threadid, state
     state = Set.new(state) & MESSAGE_MUTABLE_STATE
 
@@ -184,7 +198,7 @@ class MetaIndex
     until threadids.size >= num
       docid = @index.run_query(@query.whistlepig_q, 1).first
       break unless docid
-      threadid = load_int "threadid/#{docid}"
+      threadid = thread_id_for_doc_id docid
       raise "no threadid for doc #{docid}" unless threadid
       next if @seen_threads[threadid]
       @seen_threads[threadid] = true
@@ -232,7 +246,7 @@ class MetaIndex
       while true
         docids = @index.run_query query.whistlepig_q, 1000
         docids.each do |docid|
-          thread_id = load_int "threadid/#{docid}"
+          thread_id = thread_id_for_doc_id docid
           thread_ids << thread_id
         end
         break if docids.size < 1000
