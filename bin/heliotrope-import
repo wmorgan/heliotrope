@@ -45,6 +45,7 @@ EOS
   opt :num_skip, "Skip this many many messages and then start indexing", :type => Integer, :short => "k"
   opt :state_fn, "Store any server state in this file (IMAP and Gmail only)", :type => String
   opt :verbose, "Enable verbose output"
+  opt :sup_label_file, "Load labels from a sup label dump from this file", :type => String
 
   banner <<EOS
 
@@ -80,13 +81,24 @@ end
 
 Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
 
-port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
+imported_labels = if opts.sup_label_file
+  puts "Loading sup label dump..."
+  IO.foreach(opts.sup_label_file).inject({}) do |h, l|
+    l =~ /^(\S+?): (.+)$/ or abort "Can't parse labels line: #{l.inspect}"
+    msgid, ll = $1, $2
+    h[msgid] = ll.split(/\s+/)
+    h
+  end
+else
+  {}
+end
 
 source = if opts.mbox_fn
   Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.mbox_start_offset
 elsif opts.maildir_dirs
   Heliotrope::MaildirWalker.new(*opts.maildir_dirs)
 elsif opts.imap_host
+  port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
   username = opts.imap_username || ask("IMAP username: ")
   password = opts.imap_password || ask_secret("IMAP password: ")
   fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
@@ -116,11 +128,18 @@ begin
 
   puts "Importing mail..."
   until source.done?
-    rawbody, labels, state, desc = source.next_message
+    rawbody, source_labels, state, desc = source.next_message
 
-    ## if the source can't set its own labels, we will just add everything to
-    ## the inbox
-    labels += %w(inbox) unless source.can_provide_labels?
+    labels = if imported_labels.member? msgid
+      ## if we have imported labels, used those
+      imported_labels[msgid]
+    elsif source.can_provide_labels?
+      ## if the source can provide labels (e.g. Gmail), use those
+      source_labels
+    else
+      ## otherwise, just throw it in the inbox
+      %w(inbox)
+    end
 
     puts "; read #{desc} with labels {#{labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
 
