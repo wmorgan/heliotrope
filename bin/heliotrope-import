@@ -27,14 +27,14 @@ opts = Trollop::options do
 Imports emails to a Heliotrope server directory, from an mbox file, a
 maildir, an IMAP folder, or a GMail account.
 
-This is much faster than heliotrope-add, as it writes directly to the
-server's store directory. However, it cannot be run at the same time as
-the server.
+Importing mail is much faster than adding mail with heliotrope-add, as
+it writes directly to the server's store directory. However, it cannot
+be run at the same time as the server.
 
 Note that Heliotrope only returns threads in the order they were added
-to the index. If you are using this tool to backfill from multiple
-existing stores, you may have to use heliotrope-reindex as the final
-step to sort the messages by date.
+to the index. If you are using this tool to import mail from multiple
+pre-existing stores, you may have to use heliotrope-reindex as the final
+step to sort all messages by date.
 
 Usage: #{$0} [options]
 
@@ -83,12 +83,14 @@ Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
 
 imported_labels = if opts.sup_label_file
   puts "Loading sup label dump..."
-  IO.foreach(opts.sup_label_file).inject({}) do |h, l|
-    l =~ /^(\S+?): (.+)$/ or abort "Can't parse labels line: #{l.inspect}"
+  v = IO.foreach(opts.sup_label_file).inject({}) do |h, l|
+    l =~ /^(\S+?) \((.*)\)$/ or abort "Can't parse labels line: #{l[0..250].inspect}"
     msgid, ll = $1, $2
     h[msgid] = ll.split(/\s+/)
     h
   end
+  puts "Loaded #{v.size} labels."
+  v
 else
   {}
 end
@@ -130,18 +132,7 @@ begin
   until source.done?
     rawbody, source_labels, state, desc = source.next_message
 
-    labels = if imported_labels.member? msgid
-      ## if we have imported labels, used those
-      imported_labels[msgid]
-    elsif source.can_provide_labels?
-      ## if the source can provide labels (e.g. Gmail), use those
-      source_labels
-    else
-      ## otherwise, just throw it in the inbox
-      %w(inbox)
-    end
-
-    puts "; read #{desc} with labels {#{labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
+    puts "; read #{desc} with labels {#{source_labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
 
     break if opts.num_messages && num_scanned >= opts.num_messages
     num_scanned += 1
@@ -153,6 +144,17 @@ begin
       if metaindex.contains_safe_msgid? message.safe_msgid
         num_seen += 1
       else
+        labels = if imported_labels.member? message.msgid
+          ## if we have imported labels, used those
+          imported_labels[message.msgid]
+        elsif source.can_provide_labels?
+          ## if the source can provide labels (e.g. Gmail), use those
+          source_labels
+        else
+          ## otherwise, just throw it in the inbox
+          %w(inbox)
+        end
+
         loc = zmbox.add rawbody
         metaindex.add_message message, state, labels, :loc => loc
         num_indexed += 1
