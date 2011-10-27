@@ -129,7 +129,7 @@ begin
 
   puts "Importing mail..."
   until source.done?
-    rawbody, source_labels, state, desc = source.next_message
+    rawbody, source_labels, source_state, desc = source.next_message
 
     puts "; read #{desc} with labels {#{source_labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
 
@@ -143,15 +143,17 @@ begin
       if metaindex.contains_safe_msgid? message.safe_msgid
         num_seen += 1
       else
-        labels = if imported_labels.member? message.msgid
-          ## if we have imported labels, used those
-          imported_labels[message.msgid]
+        state, labels = if imported_labels.member? message.msgid
+          ## if we have imported labels, use those
+          ## for both labels and state
+          v = imported_labels[message.msgid]
+          [v, v]
         elsif source.can_provide_labels?
           ## if the source can provide labels (e.g. Gmail), use those
-          source_labels
+          [source_state, source_labels]
         else
-          ## otherwise, just throw it in the inbox
-          %w(inbox)
+          ## otherwise, just mark it unread and throw it in the inbox
+          [%w(unread), %w(inbox)]
         end
 
         loc = zmbox.add rawbody

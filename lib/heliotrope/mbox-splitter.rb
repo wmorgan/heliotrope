@@ -40,7 +40,7 @@ class MboxSplitter
         message << l
       end
     end
-    [message, ["unread"], ["inbox"], offset]
+    [message, [], [], offset]
   end
 
   def skip! num
