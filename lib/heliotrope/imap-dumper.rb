@@ -202,6 +202,11 @@ class IMAPDumper
           state += ["unread"]
         end
 
+        if state.member? "flagged"
+          state -= ["flagged"]
+          state += ["starred"]
+        end
+
         ## it's a little funny to do this gmail-specific label parsing here, but
         ## i'm hoping that other imap servers might one day support this extension
         labels = (data.attr["X-GM-LABELS"] || []).map { |label| Net::IMAP.decode_utf7(label.to_s).downcase }
