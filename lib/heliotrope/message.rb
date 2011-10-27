@@ -1,9 +1,9 @@
 # encoding: UTF-8
 
 require 'rmail'
-require 'open3'
 require 'digest/md5'
 require 'json'
+require 'timeout'
 
 module Heliotrope
 class InvalidMessageError < StandardError; end
@@ -271,13 +271,21 @@ private
   require 'locale'
   SYSTEM_CHARSET = Locale.charset
   HTML_CONVERSION_CMD = "html2text"
+  HTML_CONVERSION_TIMEOUT = 10 # seconds... this thing can be slow
   def html_to_text html, charset
     ## ignore charset. html2text produces output in the system charset.
     #puts "; forced to decode html. running #{HTML_CONVERSION_CMD} on #{html.size}b mime part..."
-    content = Open3.popen3(HTML_CONVERSION_CMD) do |inn, out, err|
-      inn.print html
-      inn.close
-      out.read
+    content = begin
+      Timeout.timeout(HTML_CONVERSION_TIMEOUT) do
+        Heliotrope.popen3(HTML_CONVERSION_CMD) do |inn, out, err|
+          inn.print html
+          inn.close
+          out.read
+        end
+      end
+    rescue Timeout::Error
+      $stderr.puts "; warning: timeout when converting message from html to text"
+      "[html conversion failed on this command (htmlconversionfailure)]"
     end
     [content, SYSTEM_CHARSET]
   end
