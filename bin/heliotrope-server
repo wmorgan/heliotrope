@@ -135,6 +135,9 @@ class HeliotropeServer < Sinatra::Base
       if @metaindex.contains_safe_msgid? message.safe_msgid
         { :response => :ok, :status => :seen }
       else
+        if @hooks.enabled? "before-add-message"
+          message, labels, state = @hooks.run "before-add-message", :message => message, :labels => labels, :state => state
+        end
         add_message message, rawbody, labels, state, extra
       end
     rescue Heliotrope::InvalidMessageError => e
