@@ -127,13 +127,19 @@ class MetaIndex
   ## docids from other sources are ok.
   def redirect! old_doc_id, doc_id
     return if old_doc_id.to_i == doc_id.to_i
-    write_int "redir/#{doc_id}", old_doc_id
+    write_int "ri2s/#{doc_id}", old_doc_id # redirect index to store
+    write_int "rs2i/#{old_doc_id}", doc_id # reidrect store to index
   end
 
   ## get a threadid from a docid, following redirects.
-  def thread_id_for_doc_id docid
-    docid = load_int("redir/#{docid}") || docid
+  def thread_id_for_doc_id_from_search docid
+    a = docid
+    docid = load_int("ri2s/#{docid}") || docid
     load_int "threadid/#{docid}"
+  end
+
+  def doc_id_from_doc_id_for_search docid
+    docid = load_int("rs2i/#{docid}") || docid
   end
 
   def update_thread_state threadid, state
@@ -198,7 +204,7 @@ class MetaIndex
     until threadids.size >= num
       docid = @index.run_query(@query.whistlepig_q, 1).first
       break unless docid
-      threadid = thread_id_for_doc_id docid
+      threadid = thread_id_for_doc_id_from_search docid
       raise "no threadid for doc #{docid}" unless threadid
       next if @seen_threads[threadid]
       @seen_threads[threadid] = true
@@ -246,7 +252,7 @@ class MetaIndex
       while true
         docids = @index.run_query query.whistlepig_q, 1000
         docids.each do |docid|
-          thread_id = thread_id_for_doc_id docid
+          thread_id = thread_id_for_doc_id_from_search docid
           thread_ids << thread_id
         end
         break if docids.size < 1000
@@ -392,11 +398,18 @@ private
   def write_thread_message_labels! thread_structure, labels
     thread_structure.flatten.each do |docid|
       next if docid < 0 # psuedo-root
+      docid = doc_id_from_doc_id_for_search docid # unredirect
       key = "mlabels/#{docid}"
       oldlabels = load_set key
       write_set key, labels
-      (oldlabels - labels).each { |l| puts "; removing ~#{l} from #{docid}" if @debug; @index.remove_label docid, l }
-      (labels - oldlabels).each { |l| puts "; adding ~#{l} to #{docid}" if @debug; @index.add_label docid, l }
+      (oldlabels - labels).each do |l|
+        puts "; removing ~#{l} from #{docid}" if @debug
+        @index.remove_label docid, l
+      end
+      (labels - oldlabels).each do |l|
+        puts "; adding ~#{l} to #{docid}" if @debug
+        @index.add_label docid, l
+      end
     end
   end
 
