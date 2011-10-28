@@ -26,7 +26,7 @@ class Message
       Time.parse(validate_field(:date, @m.header["date"])).to_i
     rescue ArgumentError
       #puts "warning: invalid date field #{@m.header['date']}"
-      Time.at 0
+      0
     end
 
     @to = Person.many_from_string decode_header(@m.header["to"])
