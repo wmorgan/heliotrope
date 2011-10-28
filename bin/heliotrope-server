@@ -616,7 +616,7 @@ server = HeliotropeServer.new metaindex, zmbox, hooks
 
 app = if opts.mode == "development"
   Rack::Builder.new do
-    use Rack::CommonLogger, $stdout
+    #use Rack::CommonLogger, $stdout
     use Rack::ShowExceptions
     use Rack::Lint
     run server
