@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'rest_client'
 require 'json'
+require 'set'
 
 class HeliotropeClient
   class Error < StandardError; end
@@ -27,8 +28,8 @@ class HeliotropeClient
   def thread id; get_json("thread/#{id}")["messageinfos"] end
   def threadinfo id; get_json("thread/#{id}/info") end
 
-  def message id, preferred_mime_type="text/plain"
-    get_json "message/#{id}", :mime_type_pref => preferred_mime_type
+  def message id, mime_type_pref="text/plain"
+    get_json "message/#{id}", :mime_type_pref => mime_type_pref
   end
 
   def send_message message, opts={}
