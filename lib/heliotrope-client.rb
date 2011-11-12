@@ -38,6 +38,14 @@ class HeliotropeClient
     post_json "message/send", :message => message, :labels => opts[:labels].to_json, :state => opts[:state].to_json
   end
 
+  def add_message message, opts={}
+    opts[:labels] ||= []
+    opts[:state] ||= []
+		puts "message : #{message.dump}"
+		puts "opts : #{opts.inspect}"
+    post_json "message", :message => message, :labels => opts[:labels].to_json, :state => opts[:state].to_json
+  end
+
   def bounce_message message, opts={}
     opts[:force_recipients] ||= []
     post_json "message/bounce", :message => message, :force_recipients => opts[:force_recipients].to_json
@@ -95,7 +103,7 @@ private
       raise Error, "invalid response: #{v.inspect[0..200]}" unless v.is_a?(Hash)
       case v["response"]
         when "ok"; v
-        when "error"; raise Error, v["message"]
+        when "error"; raise Error, v.inspect
         else raise Error, "invalid response: #{v.inspect[0..200]}"
       end
     rescue SystemCallError, RestClient::Exception, JSON::ParserError => e
