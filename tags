@@ -1,0 +1,244 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Array	lib/heliotrope/meta-index.rb	/^class Array$/;"	c
+Decoder	lib/heliotrope/decoder.rb	/^class Decoder$/;"	c	class:Heliotrope
+Env	lib/heliotrope/hooks.rb	/^  class Env$/;"	c	class:Heliotrope.Hooks
+Error	lib/heliotrope-client.rb	/^  class Error < StandardError; end$/;"	c	class:HeliotropeClient
+GMailDumper	lib/heliotrope/gmail-dumper.rb	/^class GMailDumper < IMAPDumper$/;"	c	class:Heliotrope
+Heliotrope	lib/heliotrope.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/decoder.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/gmail-dumper.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/hooks.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/imap-dumper.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/maildir-walker.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/mbox-splitter.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/message.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/meta-index.rb	/^module Heliotrope$/;"	m	class:Array
+Heliotrope	lib/heliotrope/person.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/query.rb	/^module Heliotrope$/;"	m
+Heliotrope	lib/heliotrope/zmbox.rb	/^module Heliotrope$/;"	m
+HeliotropeClient	lib/heliotrope-client.rb	/^class HeliotropeClient$/;"	c
+HeliotropeTest	test/test_heliotrope.rb	/^class HeliotropeTest < ::Test::Unit::TestCase$/;"	c
+Hooks	lib/heliotrope/hooks.rb	/^class Hooks$/;"	c	class:Heliotrope
+IMAP	lib/heliotrope/imap-dumper.rb	/^  class IMAP$/;"	c	class:Net
+IMAPDumper	lib/heliotrope/imap-dumper.rb	/^class IMAPDumper$/;"	c	class:Heliotrope
+InvalidLabelError	lib/heliotrope/meta-index.rb	/^  class InvalidLabelError < StandardError$/;"	c	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+InvalidMessageError	lib/heliotrope/message.rb	/^class InvalidMessageError < StandardError; end$/;"	c	class:Heliotrope
+MBoxStream	lib/heliotrope/mbox-splitter.rb	/^class MBoxStream$/;"	c	class:Heliotrope
+MaildirWalker	lib/heliotrope/maildir-walker.rb	/^class MaildirWalker$/;"	c	class:Heliotrope
+MboxSplitter	lib/heliotrope/mbox-splitter.rb	/^class MboxSplitter$/;"	c	class:Heliotrope
+Message	lib/heliotrope/message.rb	/^class Message$/;"	c	class:Heliotrope
+MetaIndex	lib/heliotrope/meta-index.rb	/^class MetaIndex$/;"	c	class:Array.Heliotrope
+MockMessage	test/test_heliotrope.rb	/^  class MockMessage$/;"	c	class:HeliotropeTest
+Net	lib/heliotrope/imap-dumper.rb	/^module Net$/;"	m
+ParseError	lib/heliotrope/query.rb	/^  class ParseError < StandardError; end$/;"	c	class:Heliotrope.Query
+Person	lib/heliotrope/person.rb	/^class Person$/;"	c	class:Heliotrope
+Query	lib/heliotrope/query.rb	/^class Query$/;"	c	class:Heliotrope
+ResponseParser	lib/heliotrope/imap-dumper.rb	/^    class ResponseParser$/;"	c	class:Net.IMAP
+ZMBox	lib/heliotrope/zmbox.rb	/^class ZMBox$/;"	c	class:Heliotrope
+__run	lib/heliotrope/hooks.rb	/^    def __run __hook, __filename, __locals$/;"	f	class:Heliotrope.Hooks.Env
+add	lib/heliotrope/zmbox.rb	/^  def add string$/;"	f	class:Heliotrope.ZMBox
+add_labels_to_labellist!	lib/heliotrope/meta-index.rb	/^  def add_labels_to_labellist! labels$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+add_message	lib/heliotrope-client.rb	/^  def add_message message, opts={}$/;"	f	class:HeliotropeClient.thread.threadinfo
+add_message	lib/heliotrope/meta-index.rb	/^  def add_message message, state=[], labels=[], extra={}$/;"	f	class:Array.Heliotrope.MetaIndex
+all_labels	lib/heliotrope/meta-index.rb	/^  def all_labels$/;"	f	class:Array.Heliotrope.MetaIndex
+and	lib/heliotrope/query.rb	/^  def and other; Query.new(nil, nil, @whistlepig_q.and(other)) end$/;"	f	class:Heliotrope.Query
+assert_does_not_include	test/test_heliotrope.rb	/^  def assert_does_not_include v, set$/;"	f	class:HeliotropeTest
+assert_empty	test/test_heliotrope.rb	/^  def assert_empty x; x.empty? end unless respond_to?(:assert_empty)$/;"	f	class:HeliotropeTest
+assert_includes	test/test_heliotrope.rb	/^  def assert_includes v, set # standard one seems to have these things reversed$/;"	f	class:HeliotropeTest
+bounce_message	lib/heliotrope-client.rb	/^  def bounce_message message, opts={}$/;"	f	class:HeliotropeClient.thread.threadinfo
+build_thread_structure_from	lib/heliotrope/meta-index.rb	/^  def build_thread_structure_from safe_msgid, seen={}$/;"	f	class:Array.Heliotrope
+calc_thread_snippet	lib/heliotrope/meta-index.rb	/^  def calc_thread_snippet thread_structure$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+can_provide_labels?	lib/heliotrope/gmail-dumper.rb	/^  def can_provide_labels?; true end$/;"	f	class:Heliotrope.GMailDumper
+can_provide_labels?	lib/heliotrope/imap-dumper.rb	/^  def can_provide_labels?; false end$/;"	f	class:Heliotrope.IMAPDumper
+can_provide_labels?	lib/heliotrope/maildir-walker.rb	/^  def can_provide_labels?; false end$/;"	f	class:Heliotrope.MaildirWalker
+can_provide_labels?	lib/heliotrope/mbox-splitter.rb	/^  def can_provide_labels?; false end$/;"	f	class:Heliotrope.MboxSplitter
+clone	lib/heliotrope/query.rb	/^  def clone; Query.new(nil, nil, @whistlepig_q.clone) end$/;"	f	class:Heliotrope.Query
+close	lib/heliotrope/meta-index.rb	/^  def close$/;"	f	class:Array.Heliotrope.MetaIndex
+contains_key?	lib/heliotrope/meta-index.rb	/^  def contains_key? key; @store.member? key end$/;"	f	class:Array.Heliotrope
+contains_safe_msgid?	lib/heliotrope/meta-index.rb	/^  def contains_safe_msgid? safe_msgid; contains_key? "docid\/#{safe_msgid}" end$/;"	f	class:Array.Heliotrope.MetaIndex
+count	lib/heliotrope-client.rb	/^  def count query$/;"	f	class:HeliotropeClient
+count_results	lib/heliotrope/meta-index.rb	/^  def count_results$/;"	f	class:Array.Heliotrope.MetaIndex
+cur_message	lib/heliotrope/mbox-splitter.rb	/^  def cur_message; @stream end$/;"	f	class:Heliotrope.MBoxStream
+decode_header	lib/heliotrope/message.rb	/^  def decode_header v$/;"	f
+decode_mime_parts	lib/heliotrope/message.rb	/^  def decode_mime_parts part, preferred_type, level=0$/;"	f
+decode_rfc2047	lib/heliotrope/decoder.rb	/^  def decode_rfc2047 target_charset, from$/;"	f	class:Heliotrope
+direct_recipients	lib/heliotrope/message.rb	/^  def direct_recipients; to end$/;"	f	class:Heliotrope.Message.to_h
+display_name	lib/heliotrope/person.rb	/^  def display_name; name || handle || email end$/;"	f	class:Heliotrope.Person
+doc_id_from_doc_id_for_search	lib/heliotrope/meta-index.rb	/^  def doc_id_from_doc_id_for_search docid$/;"	f	class:Array.Heliotrope.MetaIndex
+done?	lib/heliotrope/imap-dumper.rb	/^  def done?; @ids && @ids.empty? && @msgs.empty? end$/;"	f
+done?	lib/heliotrope/maildir-walker.rb	/^  def done?$/;"	f	class:Heliotrope.MaildirWalker
+done?	lib/heliotrope/mbox-splitter.rb	/^  def done?; @stream.eof? end$/;"	f	class:Heliotrope.MBoxStream
+done?	lib/heliotrope/mbox-splitter.rb	/^  def done?; eof? end$/;"	f	class:Heliotrope.MboxSplitter
+enabled?	lib/heliotrope/hooks.rb	/^  def enabled? name; hook_for name end$/;"	f	class:Heliotrope.Hooks
+encode_as_utf8	lib/heliotrope/decoder.rb	/^  def encode_as_utf8 s$/;"	f	class:Heliotrope.Decoder
+encrypted?	lib/heliotrope/message.rb	/^  def encrypted?$/;"	f
+eof?	lib/heliotrope/mbox-splitter.rb	/^  def eof?; @stream.eof? end$/;"	f	class:Heliotrope.MboxSplitter
+fetch_docid_for_safe_msgid	lib/heliotrope/meta-index.rb	/^	def fetch_docid_for_safe_msgid safe_msgid$/;"	f	class:Array.Heliotrope.MetaIndex
+find_msgids	lib/heliotrope/message.rb	/^  def find_msgids msgids$/;"	f
+finish!	lib/heliotrope/imap-dumper.rb	/^  def finish!$/;"	f
+finish!	lib/heliotrope/maildir-walker.rb	/^  def finish!; end$/;"	f	class:Heliotrope.MaildirWalker
+finish!	lib/heliotrope/mbox-splitter.rb	/^  def finish!$/;"	f	class:Heliotrope.MboxSplitter
+finish!	lib/heliotrope/mbox-splitter.rb	/^  def finish!; end$/;"	f	class:Heliotrope.MBoxStream
+fn_for	lib/heliotrope/hooks.rb	/^  def fn_for name$/;"	f	class:Heliotrope.Hooks
+folder	lib/heliotrope/gmail-dumper.rb	/^  def folder$/;"	f	class:Heliotrope.GMailDumper
+force_to_ascii	lib/heliotrope/decoder.rb	/^  def force_to_ascii s$/;"	f	class:Heliotrope
+from_string	lib/heliotrope/person.rb	/^  def self.from_string string # ripped from sup$/;"	F	class:Heliotrope.Person
+get_date_in_file	lib/heliotrope/maildir-walker.rb	/^  def get_date_in_file fn$/;"	f	class:Heliotrope.MaildirWalker
+get_files	lib/heliotrope/maildir-walker.rb	/^  def get_files$/;"	f	class:Heliotrope.MaildirWalker
+get_json	lib/heliotrope-client.rb	/^  def get_json path, params={}$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+get_some_results	lib/heliotrope/meta-index.rb	/^  def get_some_results num$/;"	f	class:Array.Heliotrope.MetaIndex.contains_safe_msgid?
+handle_errors	lib/heliotrope-client.rb	/^  def handle_errors$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+has_attachment?	lib/heliotrope/message.rb	/^  def has_attachment?$/;"	f	class:Heliotrope
+hook_for	lib/heliotrope/hooks.rb	/^  def hook_for name$/;"	f	class:Heliotrope.Hooks
+html_to_text	lib/heliotrope/message.rb	/^  def html_to_text html, charset$/;"	f
+imap_query_columns	lib/heliotrope/gmail-dumper.rb	/^  def imap_query_columns$/;"	f	class:Heliotrope.GMailDumper
+imap_query_columns	lib/heliotrope/imap-dumper.rb	/^  def imap_query_columns$/;"	f
+in_ruby19_hell?	lib/heliotrope-client.rb	/^  def in_ruby19_hell?$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+in_ruby19_hell?	lib/heliotrope/decoder.rb	/^  def in_ruby19_hell?$/;"	f	class:Heliotrope.Decoder
+index!	lib/heliotrope/meta-index.rb	/^  def index! message$/;"	f	class:Array.Heliotrope
+indexable_text	lib/heliotrope/message.rb	/^  def indexable_text$/;"	f	class:Heliotrope.Message.to_h
+indexable_text	lib/heliotrope/person.rb	/^  def indexable_text; [name, email, handle].join(" ") end$/;"	f	class:Heliotrope
+indexable_text_for	lib/heliotrope/meta-index.rb	/^  def indexable_text_for thing$/;"	f	class:Array.Heliotrope.MetaIndex
+indirect_recipients	lib/heliotrope/message.rb	/^  def indirect_recipients; cc + bcc end$/;"	f	class:Heliotrope.Message.to_h
+info	lib/heliotrope-client.rb	/^  def info; get_json("info") end$/;"	f	class:HeliotropeClient.thread.threadinfo.labels
+initialize	lib/heliotrope-client.rb	/^  def initialize url$/;"	f	class:HeliotropeClient
+initialize	lib/heliotrope/gmail-dumper.rb	/^  def initialize opts$/;"	f	class:Heliotrope.GMailDumper
+initialize	lib/heliotrope/hooks.rb	/^    def initialize name$/;"	f	class:Heliotrope.Hooks.Env
+initialize	lib/heliotrope/hooks.rb	/^  def initialize dir$/;"	f	class:Heliotrope.Hooks
+initialize	lib/heliotrope/imap-dumper.rb	/^  def initialize opts$/;"	f	class:Heliotrope.IMAPDumper
+initialize	lib/heliotrope/maildir-walker.rb	/^  def initialize(*dirs)$/;"	f	class:Heliotrope.MaildirWalker
+initialize	lib/heliotrope/mbox-splitter.rb	/^  def initialize filename, opts={}$/;"	f	class:Heliotrope.MboxSplitter
+initialize	lib/heliotrope/mbox-splitter.rb	/^  def initialize stream$/;"	f	class:Heliotrope.MBoxStream
+initialize	lib/heliotrope/message.rb	/^  def initialize rawbody$/;"	f	class:Heliotrope.Message
+initialize	lib/heliotrope/meta-index.rb	/^    def initialize label$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!.InvalidLabelError
+initialize	lib/heliotrope/meta-index.rb	/^  def initialize store, index, hooks, opts={}$/;"	f	class:Array.Heliotrope.MetaIndex
+initialize	lib/heliotrope/person.rb	/^  def initialize name, email, handle$/;"	f	class:Heliotrope.Person
+initialize	lib/heliotrope/query.rb	/^  def initialize field, query, q=nil$/;"	f	class:Heliotrope.Query
+initialize	lib/heliotrope/zmbox.rb	/^  def initialize fn$/;"	f	class:Heliotrope.ZMBox
+initialize	test/test_heliotrope.rb	/^    def initialize opts={}$/;"	f	class:HeliotropeTest.MockMessage
+is_mbox_break_line?	lib/heliotrope/mbox-splitter.rb	/^  def is_mbox_break_line? l$/;"	f	class:Heliotrope.MboxSplitter
+is_rfc2047_encoded?	lib/heliotrope/decoder.rb	/^  def is_rfc2047_encoded? s; s =~ RFC2047_WORD end$/;"	f	class:Heliotrope
+is_valid_whistlepig_token?	lib/heliotrope/meta-index.rb	/^  def is_valid_whistlepig_token? l$/;"	f	class:Array.Heliotrope.MetaIndex
+labels	lib/heliotrope-client.rb	/^  def labels; get_json("labels")["labels"] end$/;"	f	class:HeliotropeClient.thread.threadinfo
+load!	lib/heliotrope/imap-dumper.rb	/^  def load!$/;"	f	class:Heliotrope
+load!	lib/heliotrope/maildir-walker.rb	/^  def load!; @files = get_files end$/;"	f	class:Heliotrope.MaildirWalker
+load!	lib/heliotrope/mbox-splitter.rb	/^  def load!; end # nothing to do$/;"	f	class:Heliotrope.MboxSplitter
+load!	lib/heliotrope/mbox-splitter.rb	/^  def load!; end$/;"	f	class:Heliotrope.MBoxStream
+load_array	lib/heliotrope/meta-index.rb	/^  def load_array key; @store.member?(key) ? munge(Marshal.load(@store[key])) : [] end$/;"	f	class:Array.Heliotrope
+load_hash	lib/heliotrope/meta-index.rb	/^  def load_hash key; @store.member?(key) ? munge(Marshal.load(@store[key])) : {} end$/;"	f	class:Array.Heliotrope
+load_int	lib/heliotrope/meta-index.rb	/^  def load_int key; @store.member?(key) ? Marshal.load(@store[key]) : nil end$/;"	f	class:Array.Heliotrope
+load_messageinfo	lib/heliotrope/meta-index.rb	/^  def load_messageinfo docid$/;"	f	class:Array.Heliotrope.MetaIndex
+load_set	lib/heliotrope/meta-index.rb	/^  def load_set key; @store.member?(key) ? munge(Set.new(Marshal.load(@store[key]))) : Set.new end$/;"	f	class:Array.Heliotrope
+load_string	lib/heliotrope/meta-index.rb	/^  def load_string key; munge(@store[key]) end$/;"	f	class:Array.Heliotrope
+load_structured_messageinfo	lib/heliotrope/meta-index.rb	/^  def load_structured_messageinfo thread_structure, level=0$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+load_thread	lib/heliotrope/meta-index.rb	/^  def load_thread threadid$/;"	f	class:Array.Heliotrope.MetaIndex
+load_thread_messageinfos	lib/heliotrope/meta-index.rb	/^  def load_thread_messageinfos threadid$/;"	f	class:Array.Heliotrope.MetaIndex
+load_threadinfo	lib/heliotrope/meta-index.rb	/^  def load_threadinfo threadid$/;"	f	class:Array.Heliotrope.MetaIndex
+many_from_string	lib/heliotrope/person.rb	/^  def self.many_from_string string$/;"	F	class:Heliotrope
+max_by	lib/heliotrope/meta-index.rb	/^  def max_by$/;"	f	class:Array
+merge_thread_labels	lib/heliotrope/meta-index.rb	/^  def merge_thread_labels thread_structure$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+merge_thread_state	lib/heliotrope/meta-index.rb	/^  def merge_thread_state thread_structure$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+message	lib/heliotrope-client.rb	/^  def message id, mime_type_pref="text\/plain"$/;"	f	class:HeliotropeClient.thread.threadinfo
+message_at	lib/heliotrope/mbox-splitter.rb	/^  def message_at offset$/;"	f	class:Heliotrope.MboxSplitter
+message_part	lib/heliotrope-client.rb	/^  def message_part message_id, part_id$/;"	f	class:HeliotropeClient.thread.threadinfo
+method_missing	test/test_heliotrope.rb	/^    def method_missing m, *a$/;"	f	class:HeliotropeTest.MockMessage
+mime_content_for	lib/heliotrope/message.rb	/^  def mime_content_for mime_part, preferred_type$/;"	f
+mime_filename_for	lib/heliotrope/message.rb	/^  def mime_filename_for part$/;"	f
+mime_id_for	lib/heliotrope/message.rb	/^  def mime_id_for part$/;"	f
+mime_part_types	lib/heliotrope/message.rb	/^  def mime_part_types part=@m$/;"	f
+mime_parts	lib/heliotrope/message.rb	/^  def mime_parts preferred_type$/;"	f
+mime_type_for	lib/heliotrope/message.rb	/^  def mime_type_for part$/;"	f
+msg_att	lib/heliotrope/imap-dumper.rb	/^      def msg_att$/;"	f	class:Net.IMAP.ResponseParser
+munge	lib/heliotrope/meta-index.rb	/^  def munge o$/;"	f	class:Array.Heliotrope
+munge_msgid	lib/heliotrope/message.rb	/^  def munge_msgid msgid$/;"	f
+next_message	lib/heliotrope/imap-dumper.rb	/^  def next_message$/;"	f
+next_message	lib/heliotrope/maildir-walker.rb	/^  def next_message$/;"	f	class:Heliotrope.MaildirWalker
+next_message	lib/heliotrope/mbox-splitter.rb	/^  def next_message$/;"	f	class:Heliotrope.MBoxStream
+next_message	lib/heliotrope/mbox-splitter.rb	/^  def next_message$/;"	f	class:Heliotrope.MboxSplitter
+ordered_uniq	lib/heliotrope/meta-index.rb	/^  def ordered_uniq$/;"	f	class:Array
+original_query_s	lib/heliotrope/query.rb	/^  def original_query_s; @whistlepig_q.query end$/;"	f	class:Heliotrope.Query
+parse!	lib/heliotrope/message.rb	/^  def parse!$/;"	f	class:Heliotrope.Message
+parsed_query_s	lib/heliotrope/query.rb	/^  def parsed_query_s$/;"	f	class:Heliotrope.Query
+popen3	lib/heliotrope.rb	/^  def popen3(*cmd)$/;"	f	class:Heliotrope
+post_json	lib/heliotrope-client.rb	/^  def post_json path, params={ :please => "1" } # you need to have at least one param for RestClient to work... lame$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+protect_string	lib/heliotrope/meta-index.rb	/^  def protect_string s$/;"	f	class:Array.Heliotrope
+prune_labels!	lib/heliotrope-client.rb	/^  def prune_labels!; post_json("labels\/prune")["labels"] end$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size
+prune_labels!	lib/heliotrope/meta-index.rb	/^  def prune_labels!$/;"	f	class:Array.Heliotrope.MetaIndex
+raw_message	lib/heliotrope-client.rb	/^  def raw_message message_id$/;"	f	class:HeliotropeClient.thread.threadinfo
+read	lib/heliotrope/zmbox.rb	/^  def read offset$/;"	f	class:Heliotrope.ZMBox
+really_update_message_state	lib/heliotrope/meta-index.rb	/^  def really_update_message_state docid, state$/;"	f	class:Array.Heliotrope.MetaIndex
+rebuild_all_thread_metadata	lib/heliotrope/meta-index.rb	/^  def rebuild_all_thread_metadata threadid, threadinfo$/;"	f	class:Array.Heliotrope.MetaIndex
+recipients	lib/heliotrope/message.rb	/^  def recipients; direct_recipients + indirect_recipients end$/;"	f	class:Heliotrope.Message.to_h
+redirect!	lib/heliotrope/meta-index.rb	/^  def redirect! old_doc_id, doc_id$/;"	f	class:Array.Heliotrope.MetaIndex
+reset_query!	lib/heliotrope/meta-index.rb	/^  def reset_query!$/;"	f	class:Array.Heliotrope.MetaIndex.contains_safe_msgid?
+reset_timers!	lib/heliotrope/meta-index.rb	/^  def reset_timers!$/;"	f	class:Array.Heliotrope.MetaIndex
+response_tagged	lib/heliotrope/imap-dumper.rb	/^      def response_tagged$/;"	f	class:Net.IMAP.ResponseParser
+response_untagged	lib/heliotrope/imap-dumper.rb	/^      def response_untagged$/;"	f	class:Net.IMAP.ResponseParser
+run	lib/heliotrope/hooks.rb	/^  def run name, locals={}$/;"	f	class:Heliotrope.Hooks
+safe_msgid	test/test_heliotrope.rb	/^    def safe_msgid; Digest::MD5.hexdigest msgid end$/;"	f	class:HeliotropeTest.MockMessage
+safe_refs	test/test_heliotrope.rb	/^    def safe_refs; refs.map { |r| Digest::MD5.hexdigest r } end$/;"	f	class:HeliotropeTest.MockMessage
+save!	lib/heliotrope/imap-dumper.rb	/^  def save!$/;"	f	class:Heliotrope.IMAPDumper
+search	lib/heliotrope-client.rb	/^  def search query, num=20, start=0$/;"	f	class:HeliotropeClient
+send_message	lib/heliotrope-client.rb	/^  def send_message message, opts={}$/;"	f	class:HeliotropeClient.thread.threadinfo
+set_labels!	lib/heliotrope-client.rb	/^  def set_labels! thread_id, labels$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+set_query	lib/heliotrope/meta-index.rb	/^  def set_query query$/;"	f	class:Array.Heliotrope.MetaIndex.contains_safe_msgid?
+set_state!	lib/heliotrope-client.rb	/^  def set_state! message_id, state$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+set_thread_state!	lib/heliotrope-client.rb	/^  def set_thread_state! thread_id, state$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info.size.prune_labels!
+setup	test/test_heliotrope.rb	/^  def setup$/;"	f	class:HeliotropeTest
+signed?	lib/heliotrope/message.rb	/^  def signed?$/;"	f
+size	lib/heliotrope-client.rb	/^  def size; get_json("size")["size"] end$/;"	f	class:HeliotropeClient.thread.threadinfo.labels.info
+size	lib/heliotrope/meta-index.rb	/^  def size; @index.size end$/;"	f	class:Array.Heliotrope.MetaIndex.contains_safe_msgid?
+skip!	lib/heliotrope/imap-dumper.rb	/^  def skip! num$/;"	f
+skip!	lib/heliotrope/maildir-walker.rb	/^  def skip! num$/;"	f	class:Heliotrope.MaildirWalker
+skip!	lib/heliotrope/mbox-splitter.rb	/^  def skip! num$/;"	f	class:Heliotrope.MboxSplitter
+snippet	lib/heliotrope/message.rb	/^  def snippet$/;"	f	class:Heliotrope.Message
+teardown	test/test_heliotrope.rb	/^  def teardown$/;"	f	class:HeliotropeTest
+test_added_message_state_is_preserved	test/test_heliotrope.rb	/^  def test_added_message_state_is_preserved$/;"	f	class:HeliotropeTest
+test_added_message_state_is_searchable_via_labels	test/test_heliotrope.rb	/^  def test_added_message_state_is_searchable_via_labels$/;"	f	class:HeliotropeTest
+test_added_messages_are_available_in_search	test/test_heliotrope.rb	/^  def test_added_messages_are_available_in_search$/;"	f	class:HeliotropeTest
+test_added_thread_labels_are_applied_to_the_whole_thread	test/test_heliotrope.rb	/^  def test_added_thread_labels_are_applied_to_the_whole_thread$/;"	f	class:HeliotropeTest
+test_adding_duplicate_messages_does_nothing	test/test_heliotrope.rb	/^  def test_adding_duplicate_messages_does_nothing$/;"	f	class:HeliotropeTest
+test_adding_messages_applies_labels_to_everything_in_thread_and_that_is_reflected_in_search	test/test_heliotrope.rb	/^  def test_adding_messages_applies_labels_to_everything_in_thread_and_that_is_reflected_in_search$/;"	f	class:HeliotropeTest
+test_adding_messages_can_join_threads	test/test_heliotrope.rb	/^  def test_adding_messages_can_join_threads$/;"	f	class:HeliotropeTest
+test_adding_messages_can_join_threads_and_labels_are_unionized	test/test_heliotrope.rb	/^  def test_adding_messages_can_join_threads_and_labels_are_unionized$/;"	f	class:HeliotropeTest
+test_adding_messages_can_join_threads_and_their_labels_are_unionized_and_that_is_reflected_in_search	test/test_heliotrope.rb	/^  def test_adding_messages_can_join_threads_and_their_labels_are_unionized_and_that_is_reflected_in_search$/;"	f	class:HeliotropeTest
+test_labellist_pruning_removes_labels_without_corresponding_threads	test/test_heliotrope.rb	/^  def test_labellist_pruning_removes_labels_without_corresponding_threads$/;"	f	class:HeliotropeTest
+test_labellist_updated_by_adding_messages_with_labels	test/test_heliotrope.rb	/^  def test_labellist_updated_by_adding_messages_with_labels$/;"	f	class:HeliotropeTest
+test_labellist_updated_by_tweaking_thread_labels	test/test_heliotrope.rb	/^  def test_labellist_updated_by_tweaking_thread_labels$/;"	f	class:HeliotropeTest
+test_message_state_ignores_random_stuff	test/test_heliotrope.rb	/^  def test_message_state_ignores_random_stuff$/;"	f	class:HeliotropeTest
+test_message_state_is_modifiable	test/test_heliotrope.rb	/^  def test_message_state_is_modifiable$/;"	f	class:HeliotropeTest
+test_message_state_is_propagated_to_thread_as_a_disjunction_in_search	test/test_heliotrope.rb	/^  def test_message_state_is_propagated_to_thread_as_a_disjunction_in_search$/;"	f	class:HeliotropeTest
+test_message_state_is_propagated_to_thread_as_a_disjunction_in_threadinfo	test/test_heliotrope.rb	/^  def test_message_state_is_propagated_to_thread_as_a_disjunction_in_threadinfo$/;"	f	class:HeliotropeTest
+test_message_state_is_propagated_to_threadinfo_even_if_it_is_just_on_the_root	test/test_heliotrope.rb	/^  def test_message_state_is_propagated_to_threadinfo_even_if_it_is_just_on_the_root$/;"	f	class:HeliotropeTest
+test_messages_are_threaded	test/test_heliotrope.rb	/^ def test_messages_are_threaded$/;"	f	class:HeliotropeTest
+test_size	test/test_heliotrope.rb	/^  def test_size$/;"	f	class:HeliotropeTest
+test_thread_labels_are_available_in_search	test/test_heliotrope.rb	/^  def test_thread_labels_are_available_in_search$/;"	f	class:HeliotropeTest
+test_thread_labels_are_modifiable	test/test_heliotrope.rb	/^ def test_thread_labels_are_modifiable$/;"	f	class:HeliotropeTest
+test_thread_labels_from_added_messages_are_available_in_search	test/test_heliotrope.rb	/^  def test_thread_labels_from_added_messages_are_available_in_search$/;"	f	class:HeliotropeTest
+thread	lib/heliotrope-client.rb	/^  def thread id; get_json("thread\/#{id}")["messageinfos"] end$/;"	f	class:HeliotropeClient
+thread_id_for_doc_id_from_search	lib/heliotrope/meta-index.rb	/^  def thread_id_for_doc_id_from_search docid$/;"	f	class:Array.Heliotrope.MetaIndex
+thread_message!	lib/heliotrope/meta-index.rb	/^  def thread_message! message$/;"	f	class:Array.Heliotrope.MetaIndex
+threadinfo	lib/heliotrope-client.rb	/^  def threadinfo id; get_json("thread\/#{id}\/info") end$/;"	f	class:HeliotropeClient.thread
+to_email_address	lib/heliotrope/person.rb	/^  def to_email_address$/;"	f	class:Heliotrope.Person
+to_h	lib/heliotrope/message.rb	/^  def to_h message_id, preferred_type$/;"	f	class:Heliotrope.Message
+transcode	lib/heliotrope/decoder.rb	/^  def transcode target_charset, orig_charset, text$/;"	f	class:Heliotrope.Decoder
+update_message_state	lib/heliotrope/meta-index.rb	/^  def update_message_state docid, state$/;"	f	class:Array.Heliotrope.MetaIndex
+update_thread_labels	lib/heliotrope/meta-index.rb	/^  def update_thread_labels threadid, labels$/;"	f	class:Array.Heliotrope.MetaIndex
+update_thread_state	lib/heliotrope/meta-index.rb	/^  def update_thread_state threadid, state$/;"	f	class:Array.Heliotrope.MetaIndex
+validate_field	lib/heliotrope/message.rb	/^  def validate_field what, thing$/;"	f
+version	lib/heliotrope/meta-index.rb	/^  def version; 2 end$/;"	f	class:Array.Heliotrope.MetaIndex
+write_array	lib/heliotrope/meta-index.rb	/^  def write_array key, value$/;"	f	class:Array.Heliotrope
+write_hash	lib/heliotrope/meta-index.rb	/^  def write_hash key, value$/;"	f	class:Array.Heliotrope
+write_int	lib/heliotrope/meta-index.rb	/^  def write_int key, value$/;"	f	class:Array.Heliotrope
+write_messageinfo!	lib/heliotrope/meta-index.rb	/^  def write_messageinfo! message, state, docid, extra$/;"	f	class:Array.Heliotrope
+write_set	lib/heliotrope/meta-index.rb	/^  def write_set key, value$/;"	f	class:Array.Heliotrope
+write_string	lib/heliotrope/meta-index.rb	/^  def write_string key, value$/;"	f	class:Array.Heliotrope
+write_thread_message_labels!	lib/heliotrope/meta-index.rb	/^  def write_thread_message_labels! thread_structure, labels$/;"	f	class:Array.Heliotrope.MetaIndex.write_unread_participants!
+write_threadinfo!	lib/heliotrope/meta-index.rb	/^  def write_threadinfo! threadid, thread_structure, labels, state, snippet$/;"	f	class:Array.Heliotrope
+write_unread_participants!	lib/heliotrope/meta-index.rb	/^  def write_unread_participants! threadid, messages, states$/;"	f	class:Array.Heliotrope.MetaIndex
+xlist	lib/heliotrope/imap-dumper.rb	/^    def xlist(refname, mailbox)$/;"	f	class:Net.IMAP
