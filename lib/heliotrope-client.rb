@@ -41,8 +41,6 @@ class HeliotropeClient
   def add_message message, opts={}
     opts[:labels] ||= []
     opts[:state] ||= []
-		puts "message : #{message.dump}"
-		puts "opts : #{opts.inspect}"
     post_json "message", :message => message, :labels => opts[:labels].to_json, :state => opts[:state].to_json
   end
 

@@ -132,7 +132,8 @@ class HeliotropeServer < Sinatra::Base
     begin
       message = raw_body_to_message rawbody
       if @metaindex.contains_safe_msgid? message.safe_msgid
-        { :response => :ok, :status => :seen }
+				doc_id = @metaindex.fetch_docid_for_safe_msgid message.safe_msgid
+        { :response => :ok, :status => :seen, :doc_id => doc_id }
       else
         if @hooks.enabled? "before-add-message"
           message, labels, state = @hooks.run "before-add-message", :message => message, :labels => labels, :state => state
