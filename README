@@ -84,11 +84,19 @@ For a full client, see https://github.com/wmorgan/turnsole/.
 
 ADDING EMAIL
 
-Once the server is running, you can use heliotrope-add to add individual
-emails as they arrive.
+Once the server is running, you can use heliotrope-add (without the -d
+argument) to add individual emails as they arrive.
 
 To add a single email:
   cat email.txt | ruby -Ilib bin/heliotrope-add
+
+To fetch new emails from gmail (with password, so suitable for a cron job)
+  ruby -Ilib bin/heliotrope-add -g <gmail username> -l <gmail password>
+
+Note that running without the -d option means talking to the heliotrope 
+server rather than directly opening the message store files. This is 
+slower, but once the server has the files open the add process couldn't 
+open them itself anyway.
 
 Once Heliotrope is production-ready, I'll add some documentation about
 procmailrc or whatever.
