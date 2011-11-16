@@ -34,9 +34,9 @@ class MboxSplitter
   def next_message
     message = ""
     offset = @stream.tell
-    while message.empty?
+    while message.empty? && !@stream.eof?
       @stream.each_line do |l|
-        break if is_mbox_break_line?(l)
+        break if is_mbox_break_line?(l) || l.nil?
         message << l
       end
     end
