@@ -131,7 +131,7 @@ begin
   until source.done?
     rawbody, source_labels, source_state, desc = source.next_message
 
-    puts "; read #{desc} with labels {#{source_labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
+    puts "; read #{desc} with labels {#{source_labels.join ", "}} and state {#{source_state.join ", "}}" if opts.verbose
 
     break if opts.num_messages && num_scanned >= opts.num_messages
     num_scanned += 1
