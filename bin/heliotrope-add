@@ -115,7 +115,10 @@ begin
 
     ## if the source can't set its own labels, we will just add everything to
     ## the inbox
-    labels += %w(inbox) unless source.can_provide_labels?
+    unless source.can_provide_labels?
+      labels += %w(inbox)
+      state += %w(unread)
+    end
 
     puts "; read #{desc} with labels {#{labels.join ", "}} and state {#{state.join ", "}}" if opts.verbose
 
