@@ -47,6 +47,7 @@ Options for reading from an mbox file:
 EOS
   opt :mbox_fn, "mbox filename", :type => String, :short => "m"
   opt :mbox_start_offset, "Start file offset for scanning", :default => 0, :short => "s"
+  opt :mbox_end_offset_fn, "Write end offset to this file", :type => String
   banner <<EOS
 
 Options for reading from a maildir directory:
@@ -145,6 +146,9 @@ begin
     end
   end
 ensure
+  if opts.mbox_end_offset_fn
+    File.open(opts.mbox_end_offset_fn, "w") { |f| f.puts source.offset }
+  end
   source.finish!
 end
 

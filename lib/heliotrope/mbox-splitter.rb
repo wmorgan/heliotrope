@@ -30,17 +30,18 @@ class MboxSplitter
 
   def can_provide_labels?; false end
   def load!; end # nothing to do
+  def offset; @stream.tell end
 
   def next_message
     message = ""
-    offset = @stream.tell
+    start_offset = @stream.tell
     while message.empty? && !@stream.eof?
       @stream.each_line do |l|
         break if is_mbox_break_line?(l) || l.nil?
         message << l
       end
     end
-    [message, [], [], offset]
+    [message, [], [], start_offset]
   end
 
   def skip! num
@@ -50,7 +51,6 @@ class MboxSplitter
   def eof?; @stream.eof? end
   def done?; eof? end
   def finish!
-    puts "end offset is #{@stream.tell}"
     @stream.close
   end
 
