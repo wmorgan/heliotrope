@@ -112,7 +112,11 @@ class MetaIndex
     state << "encrypted" if message.encrypted?
 
     ## add message to index
-    docid = index! message
+    index_docid = index! message
+    docid = gen_new_docid!
+
+    ## write index_docid <-> docid mapping
+    write_docid_mapping! docid, index_docid
 
     ## add message to store
     messageinfo = write_messageinfo! message, state, docid, extra
@@ -158,26 +162,6 @@ class MetaIndex
     end
 
     new_state
-  end
-
-  ## redirects only happen when we have to reindex stuff. you only have
-  ## to follow them when you get the docids out of the search index--
-  ## docids from other sources are ok.
-  def redirect! old_doc_id, doc_id
-    return if old_doc_id.to_i == doc_id.to_i
-    write_int "ri2s/#{doc_id}", old_doc_id # redirect index to store
-    write_int "rs2i/#{old_doc_id}", doc_id # reidrect store to index
-  end
-
-  ## get a threadid from a docid, following redirects.
-  def thread_id_for_doc_id_from_search docid
-    a = docid
-    docid = load_int("ri2s/#{docid}") || docid
-    load_int "threadid/#{docid}"
-  end
-
-  def doc_id_from_doc_id_for_search docid
-    docid = load_int("rs2i/#{docid}") || docid
   end
 
   def update_thread_state threadid, state
@@ -240,13 +224,12 @@ class MetaIndex
     startt = Time.now
     threadids = []
     until threadids.size >= num
-      docid = @index.run_query(@query.whistlepig_q, 1).first
-      break unless docid
-      threadid = thread_id_for_doc_id_from_search docid
-      raise "no threadid for doc #{docid}" unless threadid
-      next if @seen_threads[threadid]
-      @seen_threads[threadid] = true
-      threadids << threadid
+      index_docid = @index.run_query(@query.whistlepig_q, 1).first
+      break unless index_docid
+      doc_id, thread_id = get_thread_id_from_index_docid index_docid
+      next if @seen_threads[thread_id]
+      @seen_threads[thread_id] = true
+      threadids << thread_id
     end
 
     loadt = Time.now
@@ -289,8 +272,8 @@ class MetaIndex
     begin
       while true
         docids = @index.run_query query.whistlepig_q, 1000
-        docids.each do |docid|
-          thread_id = thread_id_for_doc_id_from_search docid
+        docids.each do |index_docid|
+          doc_id, thread_id = get_thread_id_from_index_docid index_docid
           thread_ids << thread_id
         end
         break if docids.size < 1000
@@ -331,7 +314,30 @@ class MetaIndex
     transformed || orig
   end
 
+  def write_docid_mapping! store_docid, index_docid
+    write_int "i2s/#{index_docid}", store_docid # redirect index to store
+    write_int "s2i/#{store_docid}", index_docid # reidrect store to index
+  end
+
 private
+
+  def get_thread_id_from_index_docid index_docid
+    store_docid = load_int("i2s/#{index_docid}")
+    thread_id = load_int "threadid/#{store_docid}"
+    raise "no thread_id for doc #{store_docid} (index doc #{index_docid})" unless thread_id # your index is corrupt!
+    [store_docid, thread_id]
+  end
+
+  def get_index_docid_from_store_docid store_docid
+    load_int "s2i/#{store_docid}"
+  end
+
+
+  def gen_new_docid!
+    v = load_int("next_docid") || 1
+    write_int "next_docid", v + 1
+    v
+  end
 
   def is_valid_whistlepig_token? l
     # copy logic from whistlepig's query-parser.lex
@@ -436,17 +442,19 @@ private
   def write_thread_message_labels! thread_structure, labels
     thread_structure.flatten.each do |docid|
       next if docid < 0 # psuedo-root
-      docid = doc_id_from_doc_id_for_search docid # unredirect
       key = "mlabels/#{docid}"
       oldlabels = load_set key
       write_set key, labels
+
+      ## write to index
+      index_docid = get_index_docid_from_store_docid docid
       (oldlabels - labels).each do |l|
-        puts "; removing ~#{l} from #{docid}" if @debug
-        @index.remove_label docid, l
+        puts "; removing ~#{l} from #{index_docid} (store #{docid})" if @debug
+        @index.remove_label index_docid, l
       end
       (labels - oldlabels).each do |l|
-        puts "; adding ~#{l} to #{docid}" if @debug
-        @index.add_label docid, l
+        puts "; adding ~#{l} to #{index_docid} (store #{docid})" if @debug
+        @index.add_label index_docid, l
       end
     end
   end

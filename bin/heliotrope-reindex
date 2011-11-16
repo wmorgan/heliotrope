@@ -123,12 +123,11 @@ loader = Loader.new metaindex, zmbox, :load_spam => opts.index_spam, :load_delet
 
 startt = lastt = Time.now
 num_docs = 0
-loader.each_message do |old_doc_id, entry, labels|
+loader.each_message do |store_docid, entry, labels|
   num_docs += 1
-  doc_id = index.add_entry entry
-  raise "expected doc id #{num_docs} but got #{doc_id}" unless doc_id == num_docs
-  labels.each { |l| index.add_label doc_id, l }
-  metaindex.redirect! old_doc_id, doc_id
+  index_docid = index.add_entry entry
+  labels.each { |l| index.add_label index_docid, l }
+  metaindex.write_docid_mapping! store_docid, index_docid
 
   if (Time.now - lastt) > 5
     elapsed = Time.now - startt
