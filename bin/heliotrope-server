@@ -49,8 +49,7 @@ class HeliotropeServer < Sinatra::Base
     content_type :json
     { :response => :ok,
       :status => :up,
-      :index_version => @metaindex.version,
-      :version => API_VERSION.to_s
+      :api_version => API_VERSION.to_s
     }.to_json
   end
 
@@ -613,7 +612,7 @@ FileUtils.mkdir_p File.join(opts.dir, "index")
 store = LevelDB::DB.new File.join(opts.dir, "store")
 index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
-metaindex = Heliotrope::MetaIndex.new store, index, hooks
+metaindex = Heliotrope::MetaIndex.load_or_die! store, index, hooks
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
 server = HeliotropeServer.new metaindex, zmbox, hooks
 

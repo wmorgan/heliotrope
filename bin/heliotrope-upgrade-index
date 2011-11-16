@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+# encoding: UTF-8
+
+require 'rubygems'
+require 'trollop'
+require "heliotrope"
+
+opts = Trollop::options do
+  banner <<EOS
+Usage: #{$0} [options]
+
+Where options include:
+EOS
+  opt :dir, "Base directory for all index files", :default => "."
+end
+
+def upgrade__to_0_1 store, index, hooks
+  $stderr.puts "Sorry! To upgrade to index version 0.1, you must reindex everything."
+end
+
+### execution starts here ###
+
+store = LevelDB::DB.new File.join(opts.dir, "store")
+index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
+hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
+begin
+  Heliotrope::MetaIndex.new store, index, hooks
+  puts "No upgrade needed."
+rescue Heliotrope::MetaIndex::VersionMismatchError => e
+  begin
+    hv = (e.have_version || "").gsub(/\W/, "_")
+    wv = (e.want_version || "").gsub(/\W/, "_")
+    method = "upgrade_#{hv}_to_#{wv}"
+    p method
+    $stderr.puts "Trying to upgrade from #{e.have_version.inspect} to #{e.want_version.inspect}."
+    begin
+      send method, store, index, hooks
+    rescue NoMethodError
+      abort "No upgrade possible."
+    end
+  end
+end

@@ -24,6 +24,19 @@ end
 
 module Heliotrope
 class MetaIndex
+  class VersionMismatchError < StandardError
+    attr_reader :have_version, :want_version
+
+    def initialize have_version, want_version
+      @have_version = have_version
+      @want_version = want_version
+    end
+
+    def message
+      "index is version #{have_version.inspect} but I am expecting #{want_version.inspect}"
+    end
+  end
+
   ## these are things that can be set on a per-message basis. each one
   ## corresponds to a particular label, but labels are propagated at the
   ## thread level whereas state is not.
@@ -43,6 +56,7 @@ class MetaIndex
     @query = nil # we always have (at most) one active query
     @debug = false
     reset_timers!
+    check_version! if @index
   end
 
   def close
@@ -57,7 +71,31 @@ class MetaIndex
     @index_time = @store_time = @thread_time = 0
   end
 
-  def version; 2 end
+  def version; [major_version, minor_version].join(".") end
+  def major_version; 0 end
+  def minor_version; 1 end
+
+  ## helper factory that assumes console access
+  def self.load_or_die! store, index, hooks
+    begin
+      Heliotrope::MetaIndex.new store, index, hooks
+    rescue Heliotrope::MetaIndex::VersionMismatchError => e
+      $stderr.puts "Version mismatch error: #{e.message}."
+      $stderr.puts "Try running #{File.dirname $0}/heliotrope-upgrade-index."
+      abort
+    end
+  end
+
+  def check_version! # throws a VersionMismatchError
+    my_version = [major_version, minor_version].join(".")
+
+    if @index.size == 0
+      write_string "version", my_version
+    else
+      disk_version = load_string "version"
+      raise VersionMismatchError.new(disk_version, my_version) unless my_version == disk_version
+    end
+  end
 
   def add_message message, state=[], labels=[], extra={}
     key = "docid/#{message.safe_msgid}"

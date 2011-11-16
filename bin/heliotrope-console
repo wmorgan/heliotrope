@@ -30,7 +30,7 @@ include Heliotrope
 store = LevelDB::DB.new File.join(opts.dir, "store")
 index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
 hooks = Hooks.new File.join(opts.dir, "hooks")
-metaindex = MetaIndex.new store, index, hooks
+metaindex = MetaIndex.load_or_die! store, index, hooks
 zmbox = ZMBox.new File.join(opts.dir, "messages")
 
 puts <<EOS

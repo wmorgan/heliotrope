@@ -117,7 +117,7 @@ if Whistlepig::Index.exists? new_index_fn
 end
 index = Whistlepig::Index.new new_index_fn
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
-metaindex = Heliotrope::MetaIndex.new store, nil, hooks # nil index! (for "security")
+metaindex = Heliotrope::MetaIndex.load_or_die! store, nil, hooks # nil index! (for "security")
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
 loader = Loader.new metaindex, zmbox, :load_spam => opts.index_spam, :load_deleted => opts.index_deleted, :sort => opts.reorder
 
