@@ -1,0 +1,35 @@
+Delivered-To: salutlesamis.coucou@gmail.com
+Received: by 10.216.244.204 with SMTP id m54cs27333wer;
+        Sun, 30 Oct 2011 16:56:02 -0700 (PDT)
+Return-Path: <matthieu.rakotojaona@gmail.com>
+Received-SPF: pass (google.com: domain of matthieu.rakotojaona@gmail.com designates 10.223.85.139 as permitted sender) client-ip=10.223.85.139;
+Authentication-Results: mr.google.com; spf=pass (google.com: domain of matthieu.rakotojaona@gmail.com designates 10.223.85.139 as permitted sender) smtp.mail=matthieu.rakotojaona@gmail.com; dkim=pass header.i=matthieu.rakotojaona@gmail.com
+Received: from mr.google.com ([10.223.85.139])
+        by 10.223.85.139 with SMTP id o11mr25058162fal.0.1320018961198 (num_hops = 1);
+        Sun, 30 Oct 2011 16:56:01 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type;
+        bh=8XEkznNfAX5mlG+DEIcF1LaQIT4PPfcm5aKjJcfqSfw=;
+        b=Wpa64Xk9BUvweOcjPpPv8aJ6OGYeO7ht55GlicyyoM87LQZEIXgSDwbEOZvmRJ8bYs
+         KZ8MI3+tFwryrJNdIrxzUd9wvXtgaJlMmc+t6h6b8c0djtQHW37N/EtvGBrTcAfX1hEe
+         8GQkN6042bY/Sjpgr4NrYHCeK7HIrdqwtkEws=
+Received: by 10.223.85.139 with SMTP id o11mr25058162fal.0.1320018961193; Sun,
+ 30 Oct 2011 16:56:01 -0700 (PDT)
+MIME-Version: 1.0
+Received: by 10.223.93.197 with HTTP; Sun, 30 Oct 2011 16:55:40 -0700 (PDT)
+In-Reply-To: <CBEDC99FFC478E44B54DD90B8D48A90F01516A9E@messagerie.oceanie.intranet.degetel.com>
+References: <CBEDC99FFC478E44B54DD90B8D48A90F01516A9E@messagerie.oceanie.intranet.degetel.com>
+From: Matthieu Rakotojaona <matthieu.rakotojaona@gmail.com>
+Date: Mon, 31 Oct 2011 00:55:40 +0100
+Message-ID: <CAMiZLn0LjsvQK=PYhDc6Epwbmr8H917nFsoPjdE2OCTXsbBEOg@mail.gmail.com>
+Subject: Fwd: Proposition d'Embauche au sein de l'Atelier Digital de Degetel!
+To: salutlesamis.coucou@gmail.com
+Content-Type: text/plain; charset=UTF-8
+
+test
+
+
+-- 
+Matthieu RAKOTOJAONA
