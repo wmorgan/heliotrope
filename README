@@ -51,28 +51,21 @@ Heliotrope exposes a simple debugging HTML interface. If you point your
 browser to http://localhost:8042/, you should see your empty mailstore.
 Congrats! You're running Heliotrope.
 
-IMPORTING SOME MAIL
+IMPORTING EXISTING MAIL STORES
 
-Heliotrope only returns email in the order it was added to the system. For
-normal operation, in which email is added as it arrives, this is fine. For
-bulk imports, you must take care to add the email in the order you want it
-returned.
-
-To add email, first kill your server. You can add email to the server one at a
-time when it's running (see ADDING EMAIL below), but for bulk imports, it's
-much faster to avoid the HTTP overhead.
+To bulk import mail, use heltrope-import. You must stop your server first.
 
 To add a pre-existing mbox:
-  ruby -Ilib bin/heliotrope-add -m <mbox> -d <mailstore>
+  ruby -Ilib bin/heliotrope-import -m <mbox> -d <mailstore>
 
 To add a pre-existing maildir:
-  ruby -Ilib bin/heliotrope-add -a <maildir> -d <mailstore>
+  ruby -Ilib bin/heliotrope-import -a <maildir> -d <mailstore>
 
 To add a pre-existing Gmail account:
-  ruby -Ilib bin/heliotrope-add -g <gmail username> -d <mailstore>
+  ruby -Ilib bin/heliotrope-import -g <gmail username> -d <mailstore>
 
 To add a pre-existing, non-Gmail IMAP account:
-  ruby -Ilib bin/heliotrope-add -i <imap server> -d <mailstore>
+  ruby -Ilib bin/heliotrope-import -i <imap server> -d <mailstore>
 
 For testing purposes, you may want to limit the number of emails added by
 using the --num-messages option.
@@ -85,13 +78,14 @@ For a full client, see https://github.com/wmorgan/turnsole/.
 ADDING EMAIL
 
 Once the server is running, you can use heliotrope-add to add individual
-emails as they arrive.
+emails as they arrive. Unlike heliotrope-import, heliotrope-add talks to
+your running server.
 
 To add a single email:
   cat email.txt | ruby -Ilib bin/heliotrope-add
 
-Once Heliotrope is production-ready, I'll add some documentation about
-procmailrc or whatever.
+You may do this automatically to all new email by configuring your
+.forward file appropriately.
 
 JSON API SPEC
 -------------
