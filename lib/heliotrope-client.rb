@@ -28,6 +28,10 @@ class HeliotropeClient
   def thread id; get_json("thread/#{id}")["messageinfos"] end
   def threadinfo id; get_json("thread/#{id}/info") end
 
+  def messageinfos id
+    get_json "message/#{id}", :only_infos => true
+  end
+
   def message id, mime_type_pref="text/plain"
     get_json "message/#{id}", :mime_type_pref => mime_type_pref
   end
