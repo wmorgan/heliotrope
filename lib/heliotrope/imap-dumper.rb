@@ -114,7 +114,7 @@ class IMAPDumper
   def initialize opts
     %w(host port username password state_fn folder ssl).each do |x|
       v = opts[x.to_sym]
-      raise ArgumentError, "need #{x}" unless v
+      raise ArgumentError, "need :#{x} option" if v.nil?
       instance_variable_set "@#{x}", v
     end
     @msgs = []
