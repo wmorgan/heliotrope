@@ -138,7 +138,7 @@ class IMAPDumper
     end
 
     puts "; connecting to #{@host}:#{@port} (ssl: #{!!@ssl})..."
-    @imap = Net::IMAP.new @host, @port, :ssl => @ssl
+    @imap = Net::IMAP.new @host, :port => @port, :ssl => @ssl
     puts "; login as #{@username} ..."
     @imap.login @username, @password
 
