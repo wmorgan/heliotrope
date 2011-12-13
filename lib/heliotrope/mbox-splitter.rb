@@ -7,12 +7,13 @@ class MBoxStream
   end
 
   def next_message
-    @stream.read
+    [@stream.read, [], [], "1"]
   end
 
   def cur_message; @stream end
 
   def done?; @stream.eof? end
+  def can_provide_labels?; false end
   def finish!; end
   def load!; end
 end
