@@ -29,10 +29,11 @@ PREPARING YOURSELF
 0. Find your happy place.
 1. Install html2text. On Debian-based Linux distros, it's `apt-get
    install html2text`. On OS X, `port install html2text` and `brew install
-   html2text` have been known to work.
-2. Install a modern Ruby. I recommend 1.9.2. On Debian-based Linux distros,
-   you can try the ruby1.9.1 package. You can download and compile it from
-   http://www.ruby-lang.org/en/downloads/ if you are feeling crazy.
+   html2text` have both been known to work.
+2. Install a modern Ruby. I recommend 1.9.3. On Debian-based Linux distros,
+   you can try the ruby1.9.1 package. You can also download and compile it from
+   http://www.ruby-lang.org/en/downloads/. For Debian-based Linux distros,
+   make sure you have the libreadline-dev and zlib1g-dev packages installed.
 3. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb-ruby locale`
 
 GETTING IT
@@ -44,8 +45,8 @@ For you, you should run this:
 
 RUNNING IT
 
-Decide where you want to store everything. Call this directory <dir>.
-Now run `ruby -Ilib bin/heliotrope-server -d <dir>`.
+Decide where you want to store everything. Call this directory <mailstore>.
+Now run `ruby -Ilib bin/heliotrope-server -d <mailstore>`.
 
 Heliotrope exposes a simple debugging HTML interface. If you point your
 browser to http://localhost:8042/, you should see your empty mailstore.
