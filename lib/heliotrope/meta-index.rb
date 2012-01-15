@@ -324,7 +324,7 @@ private
   def get_thread_id_from_index_docid index_docid
     store_docid = load_int("i2s/#{index_docid}")
     thread_id = load_int "threadid/#{store_docid}"
-    raise "no thread_id for doc #{store_docid} (index doc #{index_docid})" unless thread_id # your index is corrupt!
+    raise "no thread_id for doc #{store_docid.inspect} (index doc #{index_docid.inspect})" unless thread_id # your index is corrupt!
     [store_docid, thread_id]
   end
 

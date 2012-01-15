@@ -60,7 +60,7 @@ private
       doc_id += 1
       entry, labels = get_message_summary_for doc_id
       break unless entry
-      yield entry, labels
+      yield doc_id, entry, labels
     end
   end
 
