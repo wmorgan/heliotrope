@@ -313,7 +313,7 @@ class HeliotropeServer < Sinatra::Base
     message = load_actual_message messageinfo[:loc]
 
     ## merge the messageinfo (which has state, etc) with the actual content of the message
-    if params["only_infos"]
+    if params[:only_infos]
       result = messageinfo
     else
       result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
