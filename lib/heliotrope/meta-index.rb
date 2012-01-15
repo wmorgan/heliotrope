@@ -203,14 +203,14 @@ class MetaIndex
 
   def contains_safe_msgid? safe_msgid; contains_key? "docid/#{safe_msgid}" end
 
-	def fetch_docid_for_safe_msgid safe_msgid
+  def fetch_docid_for_safe_msgid safe_msgid
     key = "docid/#{safe_msgid}"
     if contains_key? key
       docid = load_int key
       threadid = load_int "thread/#{docid}"
       return [docid, threadid]
     end
-	end	
+  end
 
   def size; @index.size end
 

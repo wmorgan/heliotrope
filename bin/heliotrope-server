@@ -132,7 +132,7 @@ class HeliotropeServer < Sinatra::Base
     begin
       message = raw_body_to_message rawbody
       if @metaindex.contains_safe_msgid? message.safe_msgid
-				doc_id, thread_id = @metaindex.fetch_docid_for_safe_msgid message.safe_msgid
+        doc_id, thread_id = @metaindex.fetch_docid_for_safe_msgid message.safe_msgid
         { :response => :ok, :status => :seen, :doc_id => doc_id, :thread_id => thread_id }
       else
         if @hooks.enabled? "before-add-message"
@@ -313,11 +313,11 @@ class HeliotropeServer < Sinatra::Base
     message = load_actual_message messageinfo[:loc]
 
     ## merge the messageinfo (which has state, etc) with the actual content of the message
-		if params["only_infos"]
-			result = messageinfo
-		else
-			result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
-		end
+    if params["only_infos"]
+      result = messageinfo
+    else
+      result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
+    end
     result.merge(:response => :ok).to_json
   end
 
