@@ -6,6 +6,8 @@ require 'trollop'
 require "heliotrope"
 require 'json'
 
+SUP_LABEL_MAP = { "killed" => "muted" }
+
 def ask q
   print q
   $stdout.flush
@@ -83,9 +85,14 @@ Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
 imported_labels = if opts.sup_label_file
   puts "Loading sup label dump..."
   v = IO.foreach(opts.sup_label_file).inject({}) do |h, l|
-    l =~ /^(\S+?) \((.*)\)$/ or abort "Can't parse labels line: #{l[0..250].inspect}"
+    begin
+      l =~ /^(\S+?) \((.*)\)$/ or abort "Can't parse labels line: #{l[0..250].inspect}"
+    rescue ArgumentError # sigh
+      abort "Can't parse labels line: #{l[0..250].inspect}"
+    end
+
     msgid, ll = $1, $2
-    h[msgid] = ll.split(/\s+/)
+    h[msgid] = ll.split(/\s+/).map { |l| SUP_LABEL_MAP[l] || l }
     h
   end
   puts "Loaded #{v.size} labels."
