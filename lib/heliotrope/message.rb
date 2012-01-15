@@ -5,24 +5,6 @@ require 'digest/md5'
 require 'json'
 require 'timeout'
 
-module Mail
-class Message
-	def fetch value
-		if self[value].nil?
-			return nil
-		else
-			begin
-				self[value].decoded.to_s
-			rescue NoMethodError
-				puts "; failed to parse  #{value} : #{self[value].class} - #{self[value].to_s}"
-				self[value].to_s
-			end
-		end
-	end
-end
-end
-
-
 module Heliotrope
 class InvalidMessageError < StandardError; end
 class Message
@@ -34,9 +16,9 @@ class Message
   def parse!
     @m = RMail::Parser.read @rawbody
 
-		@msgid = @m.message_id
-		## this next error happens if we have a field, but we can't find a <something> in it
-    raise InvalidMessageError, "can't parse msgid: #{@m[:message_id].message_id}" unless @msgid
+    @msgid = find_msgids(decode_header(validate_field(:message_id, @m.header["message-id"]))).first
+    ## this next error happens if we have a field, but we can't find a <something> in it
+    raise InvalidMessageError, "can't parse msgid: #{@m.header['message-id']}" unless @msgid
     @safe_msgid = munge_msgid @msgid
 
     @from = Person.from_string decode_header(validate_field(:from, @m.header["from"]))
@@ -47,11 +29,11 @@ class Message
       0
     end
 
-		@to = @m[:to].nil? ? [] : Person.many_from_string(@m[:to].decoded.to_s)
-		@cc = @m[:cc].nil? ? [] : Person.many_from_string(@m[:cc].decoded.to_s)
-		@bcc = @m[:bcc].nil? ? [] : Person.many_from_string(@m[:bcc].decoded.to_s)
-
-		@subject = @m.subject || "" #we can store and retrieve UTF-8 ...
+    @to = Person.many_from_string decode_header(@m.header["to"])
+    @cc = Person.many_from_string decode_header(@m.header["cc"])
+    @bcc = Person.many_from_string decode_header(@m.header["bcc"])
+    @subject = decode_header @m.header["subject"]
+    @reply_to = Person.from_string @m.header["reply-to"]
 
     @refs = find_msgids decode_header(@m.header["references"] || "")
     in_reply_to = find_msgids decode_header(@m.header["in-reply-to"] || "")
