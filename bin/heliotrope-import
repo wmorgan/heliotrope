@@ -8,21 +8,6 @@ require 'json'
 
 SUP_LABEL_MAP = { "killed" => "muted" }
 
-def ask q
-  print q
-  $stdout.flush
-  (gets || abort).chomp
-end
-
-def ask_secret q
-  begin
-    `stty -echo`
-    ask q
-  ensure
-    `stty echo`
-  end
-end
-
 opts = Trollop::options do
   banner <<EOS
 Imports emails to a Heliotrope server directory, from an mbox file, a
@@ -44,9 +29,9 @@ EOS
   opt :dir, "Don't use the server. Instead, write directly to the store directory.", :type => String, :required => true
   opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
   opt :num_skip, "Skip this many many messages and then start indexing", :type => Integer, :short => "k"
-  opt :state_fn, "Store any server state in this file (IMAP and Gmail only)", :type => String
-  opt :verbose, "Enable verbose output"
+  opt :state_file, "Store state to, and read state from, this file. This enables successive runs against the same source to pick up only what's changed.", :type => String
   opt :sup_label_file, "Load labels from a sup label dump from this file", :type => String
+  opt :verbose, "Enable verbose output"
 
   banner <<EOS
 
@@ -101,24 +86,7 @@ else
   {}
 end
 
-source = if opts.mbox_fn
-  Heliotrope::MboxSplitter.new opts.mbox_fn, :start_offset => opts.mbox_start_offset
-elsif opts.maildir_dirs
-  Heliotrope::MaildirWalker.new(*opts.maildir_dirs)
-elsif opts.imap_host
-  port = opts.imap_port || (opts.dont_use_ssl ? 143 : 993)
-  username = opts.imap_username || ask("IMAP username: ")
-  password = opts.imap_password || ask_secret("IMAP password: ")
-  fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-imap-#{opts.imap_host}-#{username}")
-  Heliotrope::IMAPDumper.new :host => opts.imap_host, :port => port, :ssl => !opts.dont_use_ssl, :username => username, :password => password, :state_fn => fn, :folder => opts.imap_folder
-elsif opts.gmail_username
-  username = opts.gmail_username || ask("GMail username: ")
-  password = opts.gmail_password || ask_secret("GMail password (displayed!): ")
-  fn = opts.state_fn || File.join(ENV["HOME"], ".heliotrope-addrc-gmail-#{username}")
-  Heliotrope::GMailDumper.new :username => username, :password => password, :state_fn => fn
-else
-  Trollop::die "one of --mbox-fn, --maildir, --imap-host, or --gmail-username must be specified"
-end
+adder = Heliotrope::MessageAdder.new opts
 
 FileUtils.mkdir_p opts.dir
 FileUtils.mkdir_p File.join(opts.dir, "index")
@@ -127,65 +95,35 @@ index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
 metaindex = Heliotrope::MetaIndex.new store, index, hooks
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
-num_scanned = num_indexed = num_bad = num_seen = 0
-startt = lastt = Time.now
-begin
-  puts "Loading mail source..."
-  source.load!
-  source.skip! opts.num_skip if opts.num_skip
 
-  puts "Importing mail..."
-  until source.done?
-    rawbody, source_labels, source_state, desc = source.next_message
+adder.each_message do |rawbody, source_state, source_labels|
+  seen = indexed = bad = false
 
-    puts "; read #{desc} with labels {#{source_labels.join ", "}} and state {#{source_state.join ", "}}" if opts.verbose
-
-    break if opts.num_messages && num_scanned >= opts.num_messages
-    num_scanned += 1
-
-    rawbody.force_encoding("binary") if rawbody.respond_to?(:force_encoding)
-
-    begin
-      message = Heliotrope::Message.new(rawbody).parse!
-      if metaindex.contains_safe_msgid? message.safe_msgid
-        num_seen += 1
+  begin
+    message = Heliotrope::Message.new(rawbody).parse!
+    if metaindex.contains_safe_msgid? message.safe_msgid
+      seen = true
+    else
+      state, labels = if imported_labels.member? message.msgid
+        ## if we have imported labels, use those
+        ## for both labels and state
+        v = imported_labels[message.msgid]
+        [v, v]
       else
-        state, labels = if imported_labels.member? message.msgid
-          ## if we have imported labels, use those
-          ## for both labels and state
-          v = imported_labels[message.msgid]
-          [v, v]
-        elsif source.can_provide_labels?
-          ## if the source can provide labels (e.g. Gmail), use those
-          [source_state, source_labels]
-        else
-          ## otherwise, just mark it unread and throw it in the inbox
-          [%w(unread), %w(inbox)]
-        end
-
-        loc = zmbox.add rawbody
-        metaindex.add_message message, state, labels, :loc => loc
-        num_indexed += 1
+        [source_state, source_labels]
       end
-    rescue Heliotrope::InvalidMessageError => e
-      num_bad += 1
-    rescue Exception => e
-      File.open("bad-message.txt", "w") { |f| f.write rawbody }
-      $stderr.puts "* wrote broken message to bad-message.txt"
-      raise e
-    end
 
-    if (Time.now - lastt) > 5 # seconds
-      elapsed = Time.now - startt
-      printf "; scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
-      lastt = Time.now
+      loc = zmbox.add rawbody
+      metaindex.add_message message, state, labels, :loc => loc
+      indexed = true
     end
+  rescue Heliotrope::InvalidMessageError => e
+    bad = true
+  rescue Exception => e # sigh
+    File.open("bad-message.txt", "w") { |f| f.write rawbody }
+    $stderr.puts "* wrote broken message to bad-message.txt"
+    raise e
   end
-ensure
-  source.finish!
+
+  [seen, indexed, bad]
 end
-
-elapsed = Time.now - startt
-printf "; scanned %d, indexed %d, skipped %d bad and %d seen messages in %.1fs = %.1f m/s\n", num_scanned, num_indexed, num_bad, num_seen, elapsed, num_scanned / elapsed
-
-puts "Done."

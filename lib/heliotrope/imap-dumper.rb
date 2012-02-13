@@ -58,7 +58,6 @@ module Net
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
-        #puts "AAAAAAAA  #{tag} #{name} #{resp_text} #{@str}"
         return TaggedResponse.new(tag, name, resp_text, @str)
       end
 
@@ -110,33 +109,61 @@ end
 module Heliotrope
 class IMAPDumper
   def can_provide_labels?; false end
+  def imap_query_columns; %w(UID FLAGS BODY.PEEK[]) end
 
   def initialize opts
-    %w(host port username password state_fn folder ssl).each do |x|
+    %w(host port username password folder ssl).each do |x|
       v = opts[x.to_sym]
       raise ArgumentError, "need :#{x} option" if v.nil?
       instance_variable_set "@#{x}", v
     end
-    @msgs = []
+    @ids = nil
   end
 
   attr_reader :folder
 
-  def save!
-    return unless @last_added_uid && @last_uidvalidity
+  def load! state
+    if state
+      @last_added_uid = state["last_added_uid"]
+      @last_uidvalidity = state["last_uidvalidity"]
+    end
+    get_ids! # sets @ids
 
-    File.open(@state_fn, "w") do |f|
-      f.puts [@last_added_uid, @last_uidvalidity].to_json
+    puts "; found #{@ids.size} unadded messages on server"
+  end
+
+  def skip! num
+    @ids = @ids[num .. -1] || []
+    @msgs = []
+  end
+
+  NUM_MESSAGES_PER_ITERATION = 50
+
+  def each_message
+    until done?
+      get_more_messages! if @msgs.nil? || @msgs.empty? # sets @msgs
+      break if @msgs.empty?
+
+      body, labels, state, uid = @msgs.shift
+      yield body, labels, state, uid
+      @last_added_uid = uid
     end
   end
 
-  def load!
-    @last_added_uid, @last_uidvalidity = begin
-      JSON.parse IO.read(@state_fn)
-    rescue SystemCallError => e
-      nil
-    end
+  def done?; @ids && @ids.empty? && @msgs && @msgs.empty? end
 
+  def finish!
+    state = { "last_added_uid" => @last_added_uid, "last_uidvalidity" => @last_uidvalidity }
+    begin
+      @imap.close if @imap
+    rescue Net::IMAP::BadResponseError, SystemCallError
+    end
+    state
+  end
+
+private
+
+  def get_ids!
     puts "; connecting to #{@host}:#{@port} (ssl: #{!!@ssl})..."
     begin
       @imap = Net::IMAP.new @host, :port => @port, :ssl => @ssl
@@ -153,98 +180,73 @@ class IMAPDumper
     @uidnext = @imap.responses["UIDNEXT"].first
 
     @ids = if @uidvalidity == @last_uidvalidity
-      puts "; found #{@uidnext - @last_added_uid} new messages..."
-      ((@last_added_uid + 1) .. @uidnext).to_a
+      puts "; found #{@uidnext - @last_added_uid - 1} new messages..."
+      ((@last_added_uid + 1) .. (@uidnext - 1)).to_a
     else
       if @last_uidvalidity
-        puts "; UID validity has CHANGED! your server sucks. downloading ALL uids..."
+        puts "; UID validity has changed! your server sucks. re-downloading all uids as punishment..."
       else
-        puts "; is this your first time, sweetie? downloading all uids..."
+        puts "; awww, is this your first time? don't be shy now. downloading all uids..."
       end
       @imap.uid_search(["NOT", "DELETED"]) || []
     end
 
     @last_uidvalidity = @uidvalidity
-
-    puts "; found #{@ids.size} messages to import"
   end
 
-  def skip! num
-    @ids = @ids[num .. -1] || []
-    @msgs = []
-  end
-
-  NUM_MESSAGES_PER_ITERATION = 50
-
-  def imap_query_columns
-    %w(UID FLAGS BODY.PEEK[])
-  end
-
-  def next_message
-    if @msgs.empty?
-      imapdata = []
-      while imapdata.empty?
-        ids = @ids.shift NUM_MESSAGES_PER_ITERATION
-        query = ids.first .. ids.last
-        puts "; requesting messages #{query.inspect} from imap server"
-        startt = Time.now
-        imapdata = begin
-          @imap.uid_fetch(query, imap_query_columns) || []
-        rescue Net::IMAP::NoResponseError => e
-          puts "warning: skipping messages #{query}: #{e.message}"
-          []
-        end
-        elapsed = Time.now - startt
-        puts "; got #{imapdata.size} messages"
-        #printf "; the imap server loving gave us %d messages in %.1fs = a whopping %.1fm/s\n", imapdata.size, elapsed, imapdata.size / elapsed
-      end
-
-      @msgs = imapdata.map do |data|
-        state = data.attr["FLAGS"].map { |flag| flag.to_s.downcase }
-        if state.member? "seen"
-          state -= ["seen"]
-        else
-          state += ["unread"]
-        end
-
-        if state.member? "flagged"
-          state -= ["flagged"]
-          state += ["starred"]
-        end
-
-        ## it's a little funny to do this gmail-specific label parsing here, but
-        ## i'm hoping that other imap servers might one day support this extension
-        labels = (data.attr["X-GM-LABELS"] || []).map { |label| Net::IMAP.decode_utf7(label.to_s).downcase }
-        if labels.member? "sent"
-          labels -= ["Sent"]
-          state += ["sent"]
-        end
-        if labels.member? "starred"
-          labels -= ["Starred"]
-          state += ["starred"]
-        end
-        labels -= ["important"] # fuck that noise
-
-        body = data.attr["BODY[]"].gsub "\r\n", "\n"
-        uid = data.attr["UID"]
-
-        [body, labels, state, uid]
-      end
+  def get_more_messages!
+    if @ids.empty?
+      @msgs = []
+      return
     end
 
-    body, labels, state, uid = @msgs.shift
-    @last_added_uid = @prev_uid || @last_added_uid
-    @prev_uid = uid
+    imapdata = []
+    while imapdata.empty?
+      ids = @ids.shift NUM_MESSAGES_PER_ITERATION
+      query = ids.first .. ids.last
+      puts "; requesting messages #{query.inspect} from imap server"
+      startt = Time.now
+      imapdata = begin
+        @imap.uid_fetch(query, imap_query_columns) || []
+      rescue Net::IMAP::NoResponseError => e
+        puts "warning: skipping messages #{query}: #{e.message}"
+        []
+      end
+      elapsed = Time.now - startt
+      puts "; got #{imapdata.size} messages"
+      #printf "; the imap server loving gave us %d messages in %.1fs = a whopping %.1fm/s\n", imapdata.size, elapsed, imapdata.size / elapsed
+    end
 
-    [body, labels, state, uid]
-  end
+    @msgs = imapdata.map do |data|
+      state = data.attr["FLAGS"].map { |flag| flag.to_s.downcase }
+      if state.member? "seen"
+        state -= ["seen"]
+      else
+        state += ["unread"]
+      end
 
-  def done?; @ids && @ids.empty? && @msgs.empty? end
-  def finish!
-    begin
-      save!
-      @imap.close if @imap
-    rescue Net::IMAP::BadResponseError, SystemCallError
+      if state.member? "flagged"
+        state -= ["flagged"]
+        state += ["starred"]
+      end
+
+      ## it's a little funny to do this gmail-specific label parsing here, but
+      ## i'm hoping that other imap servers might one day support this extension
+      labels = (data.attr["X-GM-LABELS"] || []).map { |label| Net::IMAP.decode_utf7(label.to_s).downcase }
+      if labels.member? "sent"
+        labels -= ["Sent"]
+        state += ["sent"]
+      end
+      if labels.member? "starred"
+        labels -= ["Starred"]
+        state += ["starred"]
+      end
+      labels -= ["important"] # fuck that noise
+
+      body = data.attr["BODY[]"].gsub "\r\n", "\n"
+      uid = data.attr["UID"]
+
+      [body, labels, state, uid]
     end
   end
 end

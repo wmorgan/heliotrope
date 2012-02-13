@@ -14,7 +14,7 @@ class MBoxStream
 
   def done?; @stream.eof? end
   def finish!; end
-  def load!; end
+  def load! state; end
 end
 
 ## a custom mbox splitter / from line detector. rmail has one, but it splits on
@@ -23,49 +23,51 @@ end
 class MboxSplitter
   BREAK_RE = /^From \S+ .+\d\d\d\d$/
 
-  def initialize filename, opts={}
+  def initialize filename
     @stream = File.open filename, "r:BINARY"
-    @stream.seek opts[:start_offset] if opts[:start_offset]
+    @last_offset = 0
   end
 
   def can_provide_labels?; false end
-  def load!; end # nothing to do
-  def offset; @stream.tell end
-
-  def next_message
-    message = ""
-    start_offset = @stream.tell
-    while message.empty? && !@stream.eof?
-      @stream.each_line do |l|
-        break if is_mbox_break_line?(l) || l.nil?
-        message << l
+  def load! state
+    @last_offset = state["last_offset"] if state
+  end
+  
+  def each_message
+    until done?
+      message = ""
+      @stream.seek @last_offset
+      while message.empty? && !@stream.eof?
+        @stream.each_line do |l|
+          break if is_mbox_break_line?(l) || l.nil?
+          message << l
+        end
       end
+      yield message, [], [], @last_offset
+      @last_offset = @stream.tell
     end
-    [message, [], [], start_offset]
   end
 
   def skip! num
-    num.times { next_message } # lame
+    count = 0
+    each_message do |*a|
+      count += 1
+      break if count > num
+    end
   end
 
-  def eof?; @stream.eof? end
-  def done?; eof? end
+  def done?; @stream.eof? end
   def finish!
     @stream.close
-  end
-
-  def message_at offset
-    @stream.seek offset
-    offset, message = next_message
-    message
+    { "last_offset" => @last_offset }
   end
 
 private
 
   ## total hack. but all such things are.
   def is_mbox_break_line? l
-    l[0, 5] == "From " or return false
-    l =~ BREAK_RE or return false
+    l[0, 5] == "From " or return false # quick check
+    l =~ BREAK_RE or return false # longer check
     true
   end
 end

@@ -18,8 +18,8 @@ Because IMAP is terrible and you want all those features listed above.
 REQUIREMENTS
 
 Heliotrope is written in a mixture of Ruby and C. You will need a working C
-compiler, and a modern Ruby. 1.8.7 or 1.9.2 are good choices. Ruby 1.9.2 will
-give you better performance and better i18n support.
+compiler, and a modern Ruby. 1.8.7 or 1.9.2 are good choices. Ruby 1.9.2
+will give you better performance and better i18n support.
 
 Heliotrope uses html2text to generate text from HTML attachments. You will
 need this or some reasonable alternative.
@@ -69,7 +69,9 @@ To add a pre-existing, non-Gmail IMAP account:
   ruby -Ilib bin/heliotrope-import -i <imap server> -d <mailstore>
 
 For testing purposes, you may want to limit the number of emails added by
-using the --num-messages option.
+using the --num-messages option. If you additionally use the --state-file
+option to save state, successive invocations of heliotrope-import will
+resume where the stopped.
 
 After import, start the server again. You should see stuff at
 http://localhost:8042/.
@@ -85,10 +87,23 @@ your running server.
 To add a single email:
   cat email.txt | ruby -Ilib bin/heliotrope-add
 
-You may do this automatically to all new email by configuring your
-.forward file appropriately.
+To add messages from existing GMail, IMAP, mbox or maildir sources, use the
+same arguments as to heliotrope-import above. Note that if you specify
+--state-file, every run of heliotrope-add will pull in any new messages from
+the source. This makes it easy to mirror an existing account.
+
+For example, the following bash script:
+
+  while true; do
+    ruby -Ilib bin/heliotrope-import -g <gmail username> -d <mailstore>
+    sleep 300
+  done
+
+will mirror mail from a GMail account into Heliotrope with a 5-minute poll
+time.
 
 JSON API SPEC
 -------------
 
-Coming soon! For now, you can reverse engineer lib/heliotrope-client.rb.
+Heliotrope features an complete JSON-over-HTTP API. Documentation coming
+soon! For now, you can reverse engineer lib/heliotrope-client.rb.

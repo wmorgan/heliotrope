@@ -29,6 +29,7 @@ module Heliotrope
   module_function :popen3
 end
 
+require "heliotrope/message-adder"
 require "heliotrope/decoder"
 require "heliotrope/person"
 require "heliotrope/message"
