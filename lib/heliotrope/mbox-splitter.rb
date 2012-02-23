@@ -15,6 +15,15 @@ class MBoxStream
   def done?; @stream.eof? end
   def finish!; end
   def load! state; end
+  
+  def each_message
+    until done?
+      rawbody = next_message
+      yield rawbody, ["unread"], ["inbox"], "stdin"
+    end
+  end
+  
+  def can_provide_labels?; false; end
 end
 
 ## a custom mbox splitter / from line detector. rmail has one, but it splits on
