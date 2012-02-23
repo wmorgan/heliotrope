@@ -201,7 +201,7 @@ private
     end
 
     imapdata = []
-    while imapdata.empty?
+    while imapdata.empty? && !@ids.empty?
       ids = @ids.shift NUM_MESSAGES_PER_ITERATION
       query = ids.first .. ids.last
       puts "; requesting messages #{query.inspect} from imap server"
