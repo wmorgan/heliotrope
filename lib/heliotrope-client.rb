@@ -1,5 +1,6 @@
 require 'rubygems'
-require 'rest_client'
+require 'curb'
+require 'uri'
 require 'json'
 require 'set'
 
@@ -13,7 +14,7 @@ class HeliotropeClient
   attr_reader :url
   def initialize url
     @url = url
-    @resource = RestClient::Resource.new url
+    @curl = Curl::Easy.new
   end
 
   def search query, num=20, start=0
@@ -45,12 +46,22 @@ class HeliotropeClient
 
   def message_part message_id, part_id
     ## not a json blob, but a binary region
-    @resource["message/#{message_id}/part/#{part_id}"].get
+    @curl.url = "#{URI.join(@url, "/message/#{message_id}/part/#{part_id}")}"
+    @curl.http_get
+    if @curl.response_code != 200
+      raise Error, "Unexpected HTTP response code #{@curl.response_code}"
+    end
+    return @curl.body_str
   end
 
   def raw_message message_id
     ## not a json blob, but a binary region
-    @resource["message/#{message_id}/raw"].get
+    @curl.url = "#{URI.join(@url, "/message/#{message_id}/raw")}"
+    @curl.http_get
+    if @curl.response_code != 200
+      raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
+    end
+    return @curl.body_str
   end
 
   def labels; get_json("labels")["labels"] end
@@ -75,15 +86,26 @@ private
 
   def get_json path, params={}
     handle_errors do
-      response = @resource[path + ".json"].get :params => params
+      @curl.url = "#{URI.join(@url, path + ".json")}?#{URI.encode_www_form(params)}"
+      @curl.http_get
+      if @curl.response_code != 200
+        raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
+      end
+      response = @curl.body_str
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
   end
 
-  def post_json path, params={ :please => "1" } # you need to have at least one param for RestClient to work... lame
+  def post_json path, params={}
     handle_errors do
-      response = @resource[path + ".json"].post params
+      @curl.url = "#{URI.join(@url, path + ".json")}"
+      @curl.post_body = URI.encode_www_form(params)
+      @curl.http_post
+      if @curl.response_code != 200
+        raise Error, "Unexpected HTTP response code #{@curl.response_code} posting to #{@curl.url}"
+      end
+      response = @curl.body_str
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
@@ -98,7 +120,7 @@ private
         when "error"; raise Error, v["message"]
         else raise Error, "invalid response: #{v.inspect[0..200]}"
       end
-    rescue SystemCallError, RestClient::Exception, JSON::ParserError => e
+    rescue SystemCallError, Curl::Err, JSON::ParserError => e
       raise Error, "#{e.message} (#{e.class})"
     end
   end
