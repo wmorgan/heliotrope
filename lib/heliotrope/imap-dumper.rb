@@ -1,6 +1,7 @@
 # encoding: UTF-8
 require "net/imap"
 require 'json'
+require 'timeout' # TODO: system timer for 1.8?
 
 # Monkeypatch Net::IMAP to support GMail IMAP extensions.
 # http://code.google.com/apis/gmail/imap/
@@ -168,7 +169,7 @@ private
     begin
       @imap = Net::IMAP.new @host, :port => @port, :ssl => @ssl
     rescue TypeError
-      # 1.8 compatibility
+      ## 1.8 compatibility. sigh.
       @imap = Net::IMAP.new @host, @port, @ssl
     end
     puts "; login as #{@username} ..."
@@ -207,7 +208,10 @@ private
       puts "; requesting messages #{query.inspect} from imap server"
       startt = Time.now
       imapdata = begin
-        @imap.uid_fetch(query, imap_query_columns) || []
+        Timeout.timeout(30) { @imap.uid_fetch(query, imap_query_columns) || [] }
+      rescue Timeout::Error => e
+        puts "warning: timeout. retrying"
+        retry
       rescue Net::IMAP::NoResponseError => e
         puts "warning: skipping messages #{query}: #{e.message}"
         []
