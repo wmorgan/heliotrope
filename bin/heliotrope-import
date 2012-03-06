@@ -31,6 +31,8 @@ EOS
   opt :num_skip, "Skip this many many messages and then start indexing", :type => Integer, :short => "k"
   opt :state_file, "Store state to, and read state from, this file. This enables successive runs against the same source to pick up only what's changed.", :type => String
   opt :sup_label_file, "Load labels from a sup label dump from this file", :type => String
+  opt :add_labels, "Add these labels to every message (should be a comma-separated list)", :type => String
+  opt :remove_labels, "Do not add any of these labels to any message (should be a comma-separated list)", :type => String
   opt :verbose, "Enable verbose output"
 
   banner <<EOS
@@ -66,6 +68,9 @@ EOS
 end
 
 Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
+
+add_labels = (opts.add_labels || "").split(/\s*,\s*/)
+remove_labels = (opts.remove_labels || "").split(/\s*,\s*/)
 
 imported_labels = if opts.sup_label_file
   puts "Loading sup label dump..."
@@ -105,13 +110,15 @@ adder.each_message do |rawbody, source_state, source_labels|
       seen = true
     else
       state, labels = if imported_labels.member? message.msgid
-        ## if we have imported labels, use those
-        ## for both labels and state
+        ## if we have imported labels, use those for both labels and state
         v = imported_labels[message.msgid]
         [v, v]
       else
         [source_state, source_labels]
       end
+
+      labels += add_labels
+      labels -= remove_labels
 
       loc = zmbox.add rawbody
       metaindex.add_message message, state, labels, :loc => loc
