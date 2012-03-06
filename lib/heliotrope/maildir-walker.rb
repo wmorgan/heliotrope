@@ -65,12 +65,7 @@ private
     dirs = @dirs.map { |d| d.gsub(/([\*\?\[\]])/, '\\\\\1') } # have to escape for globbing
     files = dirs.map { |dir| Dir[File.join(dir, "cur", "*")] + Dir[File.join(dir, "new", "*")] }.flatten.sort
     puts "; found #{files.size} messages"
-    puts "; reading in dates..."
-    file_dates = files.map { |fn| get_date_in_file fn }
-    puts "; sorting..."
-    files = files.zip(file_dates).select { |fn, date| date }.sort_by { |fn, date| date }
-    puts "; sorted #{files.size} messages with dates"
-    files.map { |fn, date| fn }
+    files.sort_by { |fn| File.mtime(fn) }
   end
 
   def get_date_in_file fn
