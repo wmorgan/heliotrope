@@ -25,6 +25,8 @@ EOS
   opt :num_messages, "Index at most this many messages and then quit", :type => Integer, :short => "n"
   opt :num_skip, "Skip this many many messages and then start adding", :type => Integer, :short => "k"
   opt :state_file, "Store state to, and read state from, this file. This enables successive runs against the same source to pick up only what's changed.", :type => String
+  opt :add_labels, "Add these labels to every message (should be a comma-separated list)", :type => String
+  opt :remove_labels, "Do not add any of these labels to any message (should be a comma-separated list)", :type => String
   opt :verbose, "Enable verbose output"
 
   banner <<EOS
@@ -67,10 +69,16 @@ end
 
 Trollop::die "unknown argument: #{ARGV.first}" unless ARGV.empty?
 
+add_labels = (opts.add_labels || "").split(/\s*,\s*/)
+remove_labels = (opts.remove_labels || "").split(/\s*,\s*/)
+
 adder = Heliotrope::MessageAdder.new opts
 server_url = "http://#{opts.host}:#{opts.port}/message.json"
 adder.each_message do |rawbody, state, labels|
   seen = indexed = bad = false
+  labels += add_labels
+  labels -= remove_labels
+
   response = RestClient.post server_url, :message => rawbody, :state => state.to_json, :labels => labels.to_json
   response = JSON.parse response
 
