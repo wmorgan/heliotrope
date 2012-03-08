@@ -51,7 +51,7 @@ class HeliotropeClient
     if @curl.response_code != 200
       raise Error, "Unexpected HTTP response code #{@curl.response_code}"
     end
-    return @curl.body_str
+    @curl.body_str
   end
 
   def raw_message message_id
@@ -61,7 +61,7 @@ class HeliotropeClient
     if @curl.response_code != 200
       raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
     end
-    return @curl.body_str
+    @curl.body_str
   end
 
   def labels; get_json("labels")["labels"] end
