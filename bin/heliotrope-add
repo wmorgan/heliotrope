@@ -3,7 +3,8 @@
 
 require 'rubygems'
 require 'trollop'
-require 'rest_client'
+require 'curb'
+require 'uri'
 require "heliotrope"
 require 'json'
 
@@ -79,7 +80,12 @@ adder.each_message do |rawbody, state, labels|
   labels += add_labels
   labels -= remove_labels
 
-  response = RestClient.post server_url, :message => rawbody, :state => state.to_json, :labels => labels.to_json
+  params = { :message => rawbody, :state => state.to_json, :labels => labels.to_json }
+  response = Curl::Easy.http_post(server_url, URI.encode_www_form(params))
+  if response.response_code != 200
+    Trollop::die "Unexpected HTTP response code #{response.response_code} posting to #{server_url}"
+  end
+  response = response.body_str
   response = JSON.parse response
 
   if response["response"] == "ok"

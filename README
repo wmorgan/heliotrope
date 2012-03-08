@@ -34,7 +34,7 @@ PREPARING YOURSELF
    you can try the ruby1.9.1 package. You can also download and compile it from
    http://www.ruby-lang.org/en/downloads/. For Debian-based Linux distros,
    make sure you have the libreadline-dev and zlib1g-dev packages installed.
-3. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb-ruby locale lrucache`
+3. Run `gem install trollop whistlepig rest-client sinatra rmail leveldb-ruby locale lrucache curb`
 
 GETTING IT
 
