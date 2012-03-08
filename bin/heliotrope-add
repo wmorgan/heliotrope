@@ -75,7 +75,7 @@ adder.each_message do |rawbody, state, labels|
   params = { :message => rawbody, :state => state.to_json, :labels => labels.to_json }
   response = Curl::Easy.http_post(server_url, URI.encode_www_form(params))
   if response.response_code != 200
-    raise Error, "Unexpected HTTP response code #{response.response_code} posting to #{server_url}"
+    Trollop::die "Unexpected HTTP response code #{response.response_code} posting to #{server_url}"
   end
   response = response.body_str
   response = JSON.parse response
