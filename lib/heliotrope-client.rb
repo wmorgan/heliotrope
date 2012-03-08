@@ -2,6 +2,7 @@ require 'rubygems'
 require 'rest_client'
 require 'json'
 require 'set'
+require 'lrucache'
 
 class HeliotropeClient
   class Error < StandardError; end
@@ -14,6 +15,7 @@ class HeliotropeClient
   def initialize url
     @url = url
     @resource = RestClient::Resource.new url
+    @cache = LRUCache.new :max_size => 100
   end
 
   def search query, num=20, start=0
@@ -29,11 +31,11 @@ class HeliotropeClient
   def threadinfo id; get_json("thread/#{id}/info") end
 
   def messageinfos id
-    get_json "message/#{id}", :only_infos => true
+    @cache[[:message_info, id]] ||= get_json("message/#{id}", :only_infos => true)
   end
 
   def message id, mime_type_pref="text/plain"
-    get_json "message/#{id}", :mime_type_pref => mime_type_pref
+    @cache[[:message, id, mime_type_pref] ||= get_json("message/#{id}", :mime_type_pref => mime_type_pref))
   end
 
   def send_message message, opts={}
@@ -55,12 +57,12 @@ class HeliotropeClient
 
   def message_part message_id, part_id
     ## not a json blob, but a binary region
-    @resource["message/#{message_id}/part/#{part_id}"].get
+    @cache[[:message_part, message_id, part_id]] ||= @resource["message/#{message_id}/part/#{part_id}"].get
   end
 
   def raw_message message_id
     ## not a json blob, but a binary region
-    @resource["message/#{message_id}/raw"].get
+    @cache[[:raw_message, message_id]] ||= @resource["message/#{message_id}/raw"].get
   end
 
   def labels; get_json("labels")["labels"] end
