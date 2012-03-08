@@ -28,6 +28,10 @@ class HeliotropeClient
   def thread id; get_json("thread/#{id}")["messageinfos"] end
   def threadinfo id; get_json("thread/#{id}/info") end
 
+  def messageinfos id
+    get_json "message/#{id}", :only_infos => true
+  end
+
   def message id, mime_type_pref="text/plain"
     get_json "message/#{id}", :mime_type_pref => mime_type_pref
   end
@@ -36,6 +40,12 @@ class HeliotropeClient
     opts[:labels] ||= []
     opts[:state] ||= []
     post_json "message/send", :message => message, :labels => opts[:labels].to_json, :state => opts[:state].to_json
+  end
+
+  def add_message message, opts={}
+    opts[:labels] ||= []
+    opts[:state] ||= []
+    post_json "message", :message => message, :labels => opts[:labels].to_json, :state => opts[:state].to_json
   end
 
   def bounce_message message, opts={}
@@ -95,7 +105,7 @@ private
       raise Error, "invalid response: #{v.inspect[0..200]}" unless v.is_a?(Hash)
       case v["response"]
         when "ok"; v
-        when "error"; raise Error, v["message"]
+        when "error"; raise Error, v.inspect
         else raise Error, "invalid response: #{v.inspect[0..200]}"
       end
     rescue SystemCallError, RestClient::Exception, JSON::ParserError => e
