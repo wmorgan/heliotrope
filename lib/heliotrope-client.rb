@@ -46,7 +46,7 @@ class HeliotropeClient
 
   def message_part message_id, part_id
     ## not a json blob, but a binary region
-    @curl.url = "#{URI.join(@url, "/message/#{message_id}/part/#{part_id}")}"
+    @curl.url = URI.join(@url, "/message/#{message_id}/part/#{part_id}").to_s
     @curl.http_get
     if @curl.response_code != 200
       raise Error, "Unexpected HTTP response code #{@curl.response_code}"
@@ -56,7 +56,7 @@ class HeliotropeClient
 
   def raw_message message_id
     ## not a json blob, but a binary region
-    @curl.url = "#{URI.join(@url, "/message/#{message_id}/raw")}"
+    @curl.url = URI.join(@url, "/message/#{message_id}/raw").to_s
     @curl.http_get
     if @curl.response_code != 200
       raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
@@ -99,7 +99,7 @@ private
 
   def post_json path, params={}
     handle_errors do
-      @curl.url = "#{URI.join(@url, path + ".json")}"
+      @curl.url = URI.join(@url, path + ".json").to_s
       @curl.post_body = URI.encode_www_form(params)
       @curl.http_post
       if @curl.response_code != 200
