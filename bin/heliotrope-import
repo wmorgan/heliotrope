@@ -34,6 +34,8 @@ EOS
   opt :add_labels, "Add these labels to every message (should be a comma-separated list)", :type => String
   opt :remove_labels, "Do not add any of these labels to any message (should be a comma-separated list)", :type => String
   opt :verbose, "Enable verbose output"
+  opt :no_skip_spam, "If a message is marked as spam, add it anyways (default: ignore it)"
+  opt :no_skip_deleted, "If a message is marked as deleted, add it anyways (default: ignore it)"
 
   banner <<EOS
 
@@ -119,6 +121,9 @@ adder.each_message do |rawbody, source_state, source_labels|
 
       labels += add_labels
       labels -= remove_labels
+
+      next if (state.include?("spam") || labels.include?("spam")) && !opts.no_skip_spam
+      next if (state.include?("deleted") || labels.include?("deleted")) && !opts.no_skip_deleted
 
       loc = zmbox.add rawbody
       metaindex.add_message message, state, labels, :loc => loc
