@@ -36,6 +36,7 @@ EOS
   opt :verbose, "Enable verbose output"
   opt :no_skip_spam, "If a message is marked as spam, add it anyways (default: ignore it)"
   opt :no_skip_deleted, "If a message is marked as deleted, add it anyways (default: ignore it)"
+  opt :user_email_addresses, "A comma-delimited list of email addresses that belong to you. This is not necessary, but will improve the contact collection process.", :default => ""
 
   banner <<EOS
 
@@ -93,6 +94,8 @@ else
   {}
 end
 
+email_addresses = opts.user_email_addresses.split(",")
+
 adder = Heliotrope::MessageAdder.new opts
 
 FileUtils.mkdir_p opts.dir
@@ -108,6 +111,7 @@ adder.each_message do |rawbody, source_state, source_labels|
 
   begin
     message = Heliotrope::Message.new(rawbody).parse!
+
     if metaindex.contains_safe_msgid? message.safe_msgid
       seen = true
     else
@@ -127,6 +131,13 @@ adder.each_message do |rawbody, source_state, source_labels|
 
       loc = zmbox.add rawbody
       metaindex.add_message message, state, labels, :loc => loc
+
+      if email_addresses.include?(message.from.email) # from you
+        (message.to + message.cc + message.bcc).each { |contact| metaindex.touch_contact! contact }
+      elsif !message.is_list_or_automated_email?
+        metaindex.touch_contact! message.from
+      end
+
       indexed = true
     end
   rescue Heliotrope::InvalidMessageError => e

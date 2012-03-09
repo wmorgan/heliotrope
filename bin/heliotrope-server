@@ -71,6 +71,7 @@ class HeliotropeServer < Sinatra::Base
       else
         run_sendmail! rawbody, message
         add_message message, rawbody, labels, state + ["sent"], extra
+        (message.to + message.cc + message.cc).each { |c| @metaindex.touch_contact! c }
       end
     rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
       { :response => :error, :message => e.message }
@@ -137,6 +138,13 @@ class HeliotropeServer < Sinatra::Base
           message, labels, state = @hooks.run "before-add-message", :message => message, :labels => labels, :state => state
         end
         add_message message, rawbody, labels, state, extra
+
+        ## add any "important" contacts to the set of all contacts we've ever seen
+        unless message.is_list_or_automated_email?
+          ## just add the sender, for now. we can think about whether to add
+          ## recipients as well later.
+          @metaindex.touch_contact! message.from
+        end
       end
     rescue Heliotrope::InvalidMessageError => e
       { :response => :error, :error_message => e.message }
