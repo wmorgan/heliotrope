@@ -86,8 +86,6 @@ class HeliotropeServer < Sinatra::Base
     rawbody = params["message"] or raise RequestError, "need a 'message' param"
     force_recipients = JSON.parse(params["force_recipients"] || "[]")
 
-    p force_recipients
-
     begin
       message = raw_body_to_message rawbody
       run_sendmail! rawbody, message, force_recipients
