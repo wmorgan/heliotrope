@@ -47,6 +47,7 @@ class Message
     ## the email, in the case that someone has aliases
     @recipient_email = @m.header["envelope-to"] || @m.header["x-original-to"] || @m.header["delivered-to"]
 
+    @list_id = @m.header["list-id"]
     @list_subscribe = @m.header["list-subscribe"]
     @list_unsubscribe = @m.header["list-unsubscribe"]
     @list_post = @m.header["list-post"] || @m.header["x-mailing-list"]
@@ -54,7 +55,11 @@ class Message
     self
   end
 
-  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email, :list_post, :list_unsubscribe, :list_subscribe, :reply_to, :safe_msgid, :safe_refs
+  attr_reader :msgid, :from, :to, :cc, :bcc, :subject, :date, :refs, :recipient_email, :list_post, :list_unsubscribe, :list_subscribe, :list_id, :reply_to, :safe_msgid, :safe_refs
+
+  def is_list_or_automated_email?
+    list_post || list_id || (from.email =~ /=|reply|postmaster|bounce/)
+  end
 
   ## we don't encode any non-text parts here, because json encoding of
   ## binary objects is crazy-talk, and because those are likely to be
