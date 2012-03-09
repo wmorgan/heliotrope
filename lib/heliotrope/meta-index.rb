@@ -150,6 +150,27 @@ class MetaIndex
     [docid, threadid]
   end
 
+  ## add or update a contact
+  def touch_contact! contact
+    record = { :name => contact.name, :email => contact.email, :timestamp => Time.now }
+    write_hash "c/#{contact.email.downcase}", record
+    write_hash "c/#{contact.name.downcase}", record if contact.name
+  end
+
+  def contacts opts={}
+    num = opts[:num] || 20
+    prefix = opts[:prefix]
+
+    iter = if prefix
+      prefix = prefix.downcase.gsub("/", "") # oh yeah
+      @store.each(:from => "c/#{prefix}", :to => "c/#{prefix}~") # ~ is the largest character ha ha ha :( :( :(
+    else
+      @store.each(:from => "c/")
+    end
+
+    iter.take(num).map { |k, v| load_hash k }
+  end
+
   ## returns the new message state
   def update_message_state docid, state
     state = Set.new(state) & MESSAGE_MUTABLE_STATE
