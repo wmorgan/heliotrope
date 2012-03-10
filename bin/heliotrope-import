@@ -133,9 +133,9 @@ adder.each_message do |rawbody, source_state, source_labels|
       metaindex.add_message message, state, labels, :loc => loc
 
       if email_addresses.include?(message.from.email) # from you
-        (message.to + message.cc + message.bcc).each { |contact| metaindex.touch_contact! contact }
+        (message.to + message.cc + message.bcc).each { |contact| metaindex.touch_contact! contact, message.date }
       elsif !message.is_list_or_automated_email?
-        metaindex.touch_contact! message.from
+        metaindex.touch_contact! message.from, message.date
       end
 
       indexed = true
