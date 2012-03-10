@@ -324,7 +324,7 @@ class HeliotropeServer < Sinatra::Base
     else
       result = messageinfo.merge message.to_h(message_id, params["mime_type_pref"] || "text/html")
     end
-    result.merge(:response => :ok).to_s.to_json
+    result.merge(:response => :ok).to_json
   end
 
   get "/message/:message_id" do |message_id|
