@@ -16,6 +16,10 @@ class Set
   def to_json(*a); to_a.to_json(*a) end
 end
 
+module Enumerable
+  def uniq_by; inject({}) { |h, e| h[yield(e)] ||= e; h }.values end
+end
+
 class HeliotropeServer < Sinatra::Base
   API_VERSION = 0.1
 
@@ -419,6 +423,20 @@ class HeliotropeServer < Sinatra::Base
     @metaindex.update_message_state(message_id, state)
 
     get_message_summary(message_id).merge(:response => :ok).to_json
+  end
+
+  get "/contacts.json" do
+    content_type :json
+
+    prefix = params["prefix"]
+    num = (params["num"] || 20).to_i
+
+    contacts = @metaindex.contacts(:prefix => prefix, :num => num).
+      sort_by { |c| -c[:timestamp] }.
+      uniq_by { |c| c[:email] }.
+      map { |c| { :name => c[:name], :email => c[:email] } }
+
+    { :response => :ok, :contacts => contacts }.to_json
   end
 
 private

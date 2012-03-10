@@ -83,6 +83,7 @@ class HeliotropeClient
   def labels; get_json("labels")["labels"] end
   def info; get_json("info") end
   def size; get_json("size")["size"] end
+  def contacts prefix; get_json("contacts")["contacts"] end
 
   def prune_labels!; post_json("labels/prune")["labels"] end
 
