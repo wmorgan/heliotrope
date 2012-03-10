@@ -58,26 +58,12 @@ class HeliotropeClient
 
   def message_part message_id, part_id
     ## not a json blob, but a binary region
-    @cache[[:message_part, message_id, part_id]] ||= begin
-      @curl.url = URI.join(@url, "/message/#{message_id}/part/#{part_id}").to_s
-      @curl.http_get
-      if @curl.response_code != 200
-        raise Error, "Unexpected HTTP response code #{@curl.response_code}"
-      end
-      @curl.body_str
-    end
+    @cache[[:message_part, message_id, part_id]] ||= get_binary "/message/#{message_id}/part/#{part_id}" 
   end
 
   def raw_message message_id
     ## not a json blob, but a binary region
-    @cache[[:raw_message, message_id]] ||= begin
-      @curl.url = URI.join(@url, "/message/#{message_id}/raw").to_s
-      @curl.http_get
-      if @curl.response_code != 200
-        raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
-      end
-      @curl.body_str
-    end
+    @cache[[:raw_message, message_id]] ||= get_binary "/message/#{message_id}/raw"
   end
 
   def labels; get_json("labels")["labels"] end
@@ -103,12 +89,7 @@ private
 
   def get_json path, params={}
     handle_errors do
-      @curl.url = "#{URI.join(@url, path + ".json")}?#{URI.encode_www_form(params)}"
-      @curl.http_get
-      if @curl.response_code != 200
-        raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
-      end
-      response = @curl.body_str
+      response = get_binary(path + ".json" + (params.empty? ? "": "?" + URI.encode_www_form(params)))
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
@@ -126,6 +107,15 @@ private
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
+  end
+
+  def get_binary resource
+    @curl.url = URI.join(@url, resource).to_s
+    @curl.http_get
+    if @curl.response_code != 200
+      raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
+    end
+    @curl.body_str
   end
 
   def handle_errors
