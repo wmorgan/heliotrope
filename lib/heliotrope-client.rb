@@ -16,7 +16,6 @@ class HeliotropeClient
   def initialize url
     @url = url
     @cache = LRUCache.new :max_size => 100
-    @curl = Curl::Easy.new
   end
 
   def search query, num=20, start=0
@@ -86,7 +85,7 @@ class HeliotropeClient
   end
 
 private
-
+    
   def get_json path, params={}
     handle_errors do
       response = get_binary(path + ".json" + (params.empty? ? "": "?" + URI.encode_www_form(params)))
@@ -97,25 +96,22 @@ private
 
   def post_json path, params={}
     handle_errors do
-      @curl.url = URI.join(@url, path + ".json").to_s
-      @curl.post_body = URI.encode_www_form(params)
-      @curl.http_post
-      if @curl.response_code != 200
-        raise Error, "Unexpected HTTP response code #{@curl.response_code} posting to #{@curl.url}"
+      ret = Curl::Easy.http_post(URI.join(@url, path + ".json").to_s, URI.encode_www_form(params))
+      if ret.response_code != 200
+        raise Error, "Unexpected HTTP response code #{ret.response_code} posting to #{ret.url}"
       end
-      response = @curl.body_str
+      response = ret.body_str
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
   end
 
   def get_binary resource
-    @curl.url = URI.join(@url, resource).to_s
-    @curl.http_get
-    if @curl.response_code != 200
-      raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
+    ret = Curl::Easy.http_get( URI.join(@url, resource).to_s)
+    if ret.response_code != 200
+      raise Error, "Unexpected HTTP response code #{ret.response_code} getting #{ret.url}"
     end
-    @curl.body_str
+    ret.body_str
   end
 
   def handle_errors
