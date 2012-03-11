@@ -1,2 +1,4 @@
+.gitignore
 .*.swp
 .*.swo
+hooks/
