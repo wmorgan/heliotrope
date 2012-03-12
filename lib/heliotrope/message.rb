@@ -5,6 +5,13 @@ require 'digest/md5'
 require 'json'
 require 'timeout'
 
+module Enumerable
+  ## returns all the entries which are equal to startline up to endline
+  def between startline, endline
+    select { |l| true if l == startline .. l == endline }
+  end
+end
+
 module Heliotrope
 class InvalidMessageError < StandardError; end
 class Message
@@ -120,6 +127,12 @@ class Message
   SIGNED_MIME_TYPE = %r{multipart/signed;.*protocol="?application/pgp-signature"?}m
   ENCRYPTED_MIME_TYPE = %r{multipart/encrypted;.*protocol="?application/pgp-encrypted"?}m
   SIGNATURE_ATTACHMENT_TYPE = %r{application\/pgp-signature\b}
+  GPG_SIGNED_START = "-----BEGIN PGP SIGNED MESSAGE-----"
+  GPG_SIGNED_END = "-----END PGP SIGNED MESSAGE-----"
+  GPG_START = "-----BEGIN PGP MESSAGE-----"
+  GPG_END = "-----END PGP MESSAGE-----"
+  GPG_SIG_START = "-----BEGIN PGP SIGNATURE-----"
+  GPG_SIG_END = "-----END PGP SIGNATURE-----"
 
   def snippet
     mime_parts("text/plain").each do |type, fn, id, content|
@@ -141,7 +154,20 @@ class Message
   end
 
   def signed?
-    @signed ||= mime_part_types.any? { |t| t =~ SIGNED_MIME_TYPE }
+    return @signed if @signed != nil
+
+    # First check for the easy case: PGP/MIME (RFC 2440 and 3156)
+    if mime_part_types.any? { |t| t =~ SIGNED_MIME_TYPE }
+      return @signed ||= true
+    end
+
+    # Then handle multipart/mixed PGP/MIME or PGP/INLINE
+    # XXX: is the preferred_type == "text_plain" appropriate here?
+    @signed ||= mime_parts("text/plain").any? do |type, fn, id, content|
+      return true if fn && (type =~ SIGNATURE_ATTACHMENT_TYPE)
+      lines = content.split("\n")
+      !lines.between(GPG_SIGNED_START, GPG_SIGNED_END).empty?
+    end
   end
 
   def encrypted?

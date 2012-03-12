@@ -394,6 +394,34 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_does_not_include "potato", @metaindex.all_labels
   end
 
+  # Verifies that heliotrope correctly adds the signed state to a
+  # Heliotrope::Message for the different types of GPG signed messages.
+  def test_signed
+    # MIME multipart/signed
+    msg = nil
+    File.open('test/signed_multipart_signed.msg', 'r') do |f|
+      msg = Heliotrope::Message.new(f).parse!
+    end
+    assert_not_nil msg
+    assert msg.signed?, "multipart/signed message does not have the signed label"
+
+    # MIME multipart/mixed
+    msg = nil
+    File.open('test/signed_multipart_mixed.msg', 'r') do |f|
+      msg = Heliotrope::Message.new(f).parse!
+    end
+    assert_not_nil msg
+    assert msg.signed?, "multipart/mixed message does not have the signed label"
+
+    # inline GPG
+    msg = nil
+    File.open('test/signed_inline_gpg.msg', 'r') do |f|
+      msg = Heliotrope::Message.new(f).parse!
+    end
+    assert_not_nil msg
+    assert msg.signed?, "inline GPG message does not have the signed label"
+  end
+
 private
 
   def assert_includes v, set # standard one seems to have these things reversed
