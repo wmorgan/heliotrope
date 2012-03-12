@@ -151,12 +151,13 @@ class MetaIndex
   end
 
   ## add or update a contact
-  def touch_contact! contact, timestamp=Time.now
+  def touch_contact! contact, timestamp=Time.now.to_i
     old_record = load_hash "c/#{contact.email.downcase}"
-    if (old_record[:timestamp] || Time.at(0)) < timestamp
+    if (old_record[:timestamp] || 0) < timestamp
       record = { :name => contact.name, :email => contact.email, :timestamp => timestamp }
       write_hash "c/#{contact.email.downcase}", record
       write_hash "c/#{contact.name.downcase}", record if contact.name
+      old_record[:timestamp].nil? # return true if it's a brand-new record
     end
   end
 

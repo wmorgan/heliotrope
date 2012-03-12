@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'trollop'
+require 'whistlepig'
+require 'irb'
+
+require "heliotrope"
+
+opts = Trollop::options do
+  banner <<EOS
+Adds contacts to the index, for autocomplete purposes.
+Running this is only necessary if you have an older index
+without contact information in it.
+
+Usage: #{$0} [options]
+
+Where options include:
+EOS
+  opt :dir, "Base directory for all index files", :required => true, :type => String
+  opt :user_email_addresses, "A comma-delimited list of email addresses that belong to you. This is not necessary, but will improve the contact collection process.", :default => ""
+end
+
+include Heliotrope
+store = LevelDB::DB.new File.join(opts.dir, "store")
+index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
+hooks = Hooks.new File.join(opts.dir, "hooks")
+metaindex = MetaIndex.load_or_die! store, index, hooks
+zmbox = ZMBox.new File.join(opts.dir, "messages")
+
+email_addresses = opts.user_email_addresses.split ","
+
+doc_id = 0
+startt = lastt = Time.now
+puts "Scanning..."
+while true
+  doc_id += 1
+  metainfo = metaindex.load_messageinfo doc_id
+  break unless metainfo
+
+  rawbody = zmbox.read metainfo[:loc]
+  rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
+  message = Heliotrope::Message.new(rawbody).parse!
+
+  if email_addresses.include?(message.from.email) # from you
+    (message.to + message.cc + message.bcc).each do |contact|
+      new = metaindex.touch_contact! contact, message.date
+      puts "Adding contact you emailed: #{contact.to_email_address}" if new
+    end
+  elsif !message.is_list_or_automated_email?
+    new = metaindex.touch_contact! message.from, message.date
+    puts "Adding contact who emailed you: #{message.from.to_email_address}" if new
+  end
+
+  if (Time.now - lastt) > 5
+    elapsed = Time.now - startt
+    printf "; scanned %d messages in %.1fs = %.1f m/s\n", doc_id, elapsed, doc_id / elapsed
+    lastt = Time.now
+  end
+end
