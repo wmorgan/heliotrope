@@ -74,8 +74,9 @@ class HeliotropeServer < Sinatra::Base
         { :response => :ok, :status => :seen }
       else
         run_sendmail! rawbody, message
-        add_message message, rawbody, labels, state + ["sent"], extra
+        result = add_message message, rawbody, labels, state + ["sent"], extra
         (message.to + message.cc + message.cc).each { |c| @metaindex.touch_contact! c }
+        result
       end
     rescue Heliotrope::InvalidMessageError, SendmailFailedError => e
       { :response => :error, :message => e.message }
