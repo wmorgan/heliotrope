@@ -11,7 +11,7 @@ Usage: #{$0} [options]
 
 Where options include:
 EOS
-  opt :dir, "Base directory for all index files", :default => "."
+  opt :dir, "Base directory for all index files", :type => String, :required => true
 end
 
 def upgrade__to_0_1 store, index, hooks
@@ -20,7 +20,7 @@ end
 
 ### execution starts here ###
 
-store = LevelDB::DB.new File.join(opts.dir, "store")
+store = LevelDB::DB.load File.join(opts.dir, "store")
 index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
 begin
@@ -31,7 +31,6 @@ rescue Heliotrope::MetaIndex::VersionMismatchError => e
     hv = (e.have_version || "").gsub(/\W/, "_")
     wv = (e.want_version || "").gsub(/\W/, "_")
     method = "upgrade_#{hv}_to_#{wv}"
-    p method
     $stderr.puts "Trying to upgrade from #{e.have_version.inspect} to #{e.want_version.inspect}."
     begin
       send method, store, index, hooks
