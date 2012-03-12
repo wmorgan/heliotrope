@@ -231,8 +231,8 @@ class MetaIndex
     key = "docid/#{safe_msgid}"
     if contains_key? key
       docid = load_int key
-      threadid = load_int "thread/#{docid}"
-      return [docid, threadid]
+      threadid = load_int "threadid/#{docid}"
+      [docid, threadid]
     end
   end
 
