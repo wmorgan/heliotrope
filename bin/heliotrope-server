@@ -74,6 +74,9 @@ class HeliotropeServer < Sinatra::Base
         { :response => :ok, :status => :seen }
       else
         run_sendmail! rawbody, message
+        if @hooks.enabled? "before-add-message"
+          message, labels, state = @hooks.run "before-add-message", :message => message, :labels => labels, :state => state
+        end
         result = add_message message, rawbody, labels, state + ["sent"], extra
         (message.to + message.cc + message.cc).each { |c| @metaindex.touch_contact! c }
         result
