@@ -37,6 +37,8 @@ while true
   doc_id += 1
   metainfo = metaindex.load_messageinfo doc_id
   break unless metainfo
+  next if metainfo[:state].member?("spam") || metainfo[:state].member?("deleted") ||
+    metainfo[:labels].member?("spam") || metainfo[:labels].member?("deleted")
 
   rawbody = zmbox.read metainfo[:loc]
   rawbody.force_encoding "binary" if rawbody.respond_to?(:force_encoding) # sigh...
