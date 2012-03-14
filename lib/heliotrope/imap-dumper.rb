@@ -81,7 +81,7 @@ module Net
           when /\A(?:FLAGS)\z/ni
             name, val = flags_data
           when /\A(?:X-GM-LABELS)\z/ni  # Added X-GM-LABELS extension
-            name, val = flags_data
+            name, val = astrings_data
           when /\A(?:INTERNALDATE)\z/ni
             name, val = internaldate_data
           when /\A(?:RFC822(?:\.HEADER|\.TEXT)?)\z/ni
@@ -102,6 +102,32 @@ module Net
           attr[name] = val
         end
         return attr
+      end
+
+      def astrings_data
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        return name, astrings_list
+      end
+
+      def astrings_list
+        if @str.index(/\(([^)]*)\)/i, @pos)
+          @pos = $~.end(0)
+          return $1.scan(BEG_REGEXP).collect { |space, nilmatch, number, atom, quoted, lpar, rpar, bslash, star, lbra, rbra, literal, plus, percent, crlf, eof|
+            if atom
+              atom
+            elsif quoted
+              quoted
+            elsif literal
+              literal
+            else
+              nil
+            end
+          }.compact
+        else
+          parse_error("invalid astring list")
+        end
       end
     end
   end
@@ -236,7 +262,7 @@ private
 
       ## it's a little funny to do this gmail-specific label parsing here, but
       ## i'm hoping that other imap servers might one day support this extension
-      labels = (data.attr["X-GM-LABELS"] || []).map { |label| Net::IMAP.decode_utf7(label.to_s).downcase }
+      labels = (data.attr["X-GM-LABELS"] || []).map { |label| Net::IMAP.decode_utf7(label.to_s).downcase.gsub(/\\/, '').gsub(/\ /, '_') }
       if labels.member? "sent"
         labels -= ["Sent"]
         state += ["sent"]
