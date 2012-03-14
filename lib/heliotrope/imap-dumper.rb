@@ -264,11 +264,11 @@ private
       ## i'm hoping that other imap servers might one day support this extension
       labels = (data.attr["X-GM-LABELS"] || []).map { |label| Net::IMAP.decode_utf7(label.to_s).downcase.gsub(/\\/, '').gsub(/\ /, '_') }
       if labels.member? "sent"
-        labels -= ["Sent"]
+        labels -= ["sent"]
         state += ["sent"]
       end
       if labels.member? "starred"
-        labels -= ["Starred"]
+        labels -= ["starred"]
         state += ["starred"]
       end
       labels -= ["important"] # fuck that noise
