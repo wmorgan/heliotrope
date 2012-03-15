@@ -10,7 +10,7 @@ class Query
 
   def initialize field, query, q=nil
     @whistlepig_q = q || begin
-      Whistlepig::Query.new(field, query)
+      Whistlepig::Query.new(field, query).term_map { |f, t| t.downcase }
     rescue Whistlepig::ParseError => e
       raise ParseError, e.message
     end
