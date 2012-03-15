@@ -138,7 +138,7 @@ class IMAPDumper
     @msgs = []
   end
 
-  NUM_MESSAGES_PER_ITERATION = 50
+  NUM_MESSAGES_PER_ITERATION = 20
 
   def each_message
     until done?
@@ -157,7 +157,7 @@ class IMAPDumper
     state = { "last_added_uid" => @last_added_uid, "last_uidvalidity" => @last_uidvalidity }
     begin
       @imap.close if @imap
-    rescue Net::IMAP::BadResponseError, SystemCallError
+    rescue Net::IMAP::BadResponseError, SystemCallError, IOError
     end
     state
   end
@@ -208,7 +208,7 @@ private
       puts "; requesting messages #{query.inspect} from imap server"
       startt = Time.now
       imapdata = begin
-        Timeout.timeout(30) { @imap.uid_fetch(query, imap_query_columns) || [] }
+        Timeout.timeout(120) { @imap.uid_fetch(query, imap_query_columns) || [] }
       rescue Timeout::Error => e
         puts "warning: timeout. retrying"
         retry
