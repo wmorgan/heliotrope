@@ -97,11 +97,11 @@ private
 
   def post_json path, params={}
     handle_errors do
-      ret = @curl.http_post(URI.join(@url, path + ".json").to_s, URI.encode_www_form(params))
-      if ret.response_code != 200
-        raise Error, "Unexpected HTTP response code #{ret.response_code} posting to #{ret.url}"
+      curl = Curl::Easy.http_post URI.join(@url, path + ".json").to_s, URI.encode_www_form(params)
+      if curl.response_code != 200
+        raise Error, "Unexpected HTTP response code #{@url.response_code} posting to #{curl.url}"
       end
-      response = ret.body_str
+      response = curl.body_str
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
@@ -125,7 +125,7 @@ private
         when "error"; raise Error, v.inspect
         else raise Error, "invalid response: #{v.inspect[0..200]}"
       end
-    rescue SystemCallError, Curl::Err, JSON::ParserError => e
+    rescue SystemCallError, Curl::Err, JSON::ParserError, SocketError, IOError => e
       raise Error, "#{e.message} (#{e.class})"
     end
   end
