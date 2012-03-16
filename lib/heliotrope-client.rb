@@ -16,6 +16,7 @@ class HeliotropeClient
   def initialize url
     @url = url
     @cache = LRUCache.new :max_size => 100
+    @curl = Curl::Easy.new
   end
 
   def search query, num=20, start=0
@@ -96,7 +97,7 @@ private
 
   def post_json path, params={}
     handle_errors do
-      ret = Curl::Easy.http_post(URI.join(@url, path + ".json").to_s, URI.encode_www_form(params))
+      ret = @curl.http_post(URI.join(@url, path + ".json").to_s, URI.encode_www_form(params))
       if ret.response_code != 200
         raise Error, "Unexpected HTTP response code #{ret.response_code} posting to #{ret.url}"
       end
@@ -107,11 +108,12 @@ private
   end
 
   def get_binary resource
-    ret = Curl::Easy.http_get( URI.join(@url, resource).to_s)
-    if ret.response_code != 200
+    @curl.url = URI.join(@url, resource).to_s
+    @curl.http_get
+    if @curl.response_code != 200
       raise Error, "Unexpected HTTP response code #{ret.response_code} getting #{ret.url}"
     end
-    ret.body_str
+    @curl.body_str
   end
 
   def handle_errors
