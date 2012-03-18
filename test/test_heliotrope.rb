@@ -413,6 +413,14 @@ class HeliotropeTest < ::Test::Unit::TestCase
     assert_not_nil msg
     assert msg.signed?, "multipart/mixed message does not have the signed label"
 
+    # another MIME multipart/mixed, this time with an inline signature
+    msg = nil
+    File.open('test/signed_multipart_mixed2.msg', 'r') do |f|
+      msg = Heliotrope::Message.new(f).parse!
+    end
+    assert_not_nil msg
+    assert msg.signed?, "multipart/mixed GPG message does not have the signed label"
+
     # inline GPG
     msg = nil
     File.open('test/signed_inline_gpg.msg', 'r') do |f|

@@ -164,7 +164,7 @@ class Message
     # Then handle multipart/mixed PGP/MIME or PGP/INLINE
     # XXX: is the preferred_type == "text_plain" appropriate here?
     @signed ||= mime_parts("text/plain").any? do |type, fn, id, content|
-      return true if fn && (type =~ SIGNATURE_ATTACHMENT_TYPE)
+      return true if type =~ SIGNATURE_ATTACHMENT_TYPE
       lines = content.split("\n")
       !lines.between(GPG_SIGNED_START, GPG_SIGNED_END).empty?
     end
