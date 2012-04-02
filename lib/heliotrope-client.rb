@@ -111,7 +111,7 @@ private
     @curl.url = URI.join(@url, resource).to_s
     @curl.http_get
     if @curl.response_code != 200
-      raise Error, "Unexpected HTTP response code #{ret.response_code} getting #{ret.url}"
+      raise Error, "Unexpected HTTP response code #{ret.response_code} getting #{@curl.url}"
     end
     @curl.body_str
   end
