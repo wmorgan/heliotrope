@@ -58,12 +58,12 @@ class HeliotropeClient
 
   def message_part message_id, part_id
     ## not a json blob, but a binary region
-    @cache[[:message_part, message_id, part_id]] ||= get_binary "/message/#{message_id}/part/#{part_id}" 
+    @cache[[:message_part, message_id, part_id]] ||= get_raw "/message/#{message_id}/part/#{part_id}"
   end
 
   def raw_message message_id
     ## not a json blob, but a binary region
-    @cache[[:raw_message, message_id]] ||= get_binary "/message/#{message_id}/raw"
+    @cache[[:raw_message, message_id]] ||= get_raw "/message/#{message_id}/raw"
   end
 
   def labels; get_json("labels")["labels"] end
@@ -86,10 +86,12 @@ class HeliotropeClient
   end
 
 private
-    
+
+  def encode_params params; params.map { |k, v| "#{k}=#{CGI.escape v.to_s}" }.join("&") end
+
   def get_json path, params={}
     handle_errors do
-      response = get_binary(path + ".json" + (params.empty? ? "": "?" + URI.encode_www_form(params)))
+      response = get_raw(path + ".json", params)
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
       JSON.parse response
     end
@@ -97,7 +99,7 @@ private
 
   def post_json path, params={}
     handle_errors do
-      curl = Curl::Easy.http_post URI.join(@url, path + ".json").to_s, URI.encode_www_form(params)
+      curl = Curl::Easy.http_post URI.join(@url, path + ".json").to_s, encode_params(params)
       if curl.response_code != 200
         raise Error, "Unexpected HTTP response code #{@url.response_code} posting to #{curl.url}"
       end
@@ -107,11 +109,11 @@ private
     end
   end
 
-  def get_binary resource
-    @curl.url = URI.join(@url, resource).to_s
+  def get_raw resource, params={}
+    @curl.url = URI.join(@url, resource).to_s + (params.empty? ? "" : "?" + encode_params(params))
     @curl.http_get
     if @curl.response_code != 200
-      raise Error, "Unexpected HTTP response code #{ret.response_code} getting #{@curl.url}"
+      raise Error, "Unexpected HTTP response code #{@curl.response_code} getting #{@curl.url}"
     end
     @curl.body_str
   end
