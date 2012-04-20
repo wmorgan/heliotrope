@@ -5,6 +5,7 @@ require 'rubygems'
 require 'trollop'
 require 'curb'
 require 'uri'
+require 'cgi'
 require "heliotrope"
 require 'json'
 
@@ -81,7 +82,7 @@ adder.each_message do |rawbody, state, labels|
   labels -= remove_labels
 
   params = { :message => rawbody, :state => state.to_json, :labels => labels.to_json }
-  response = Curl::Easy.http_post(server_url, URI.encode_www_form(params))
+  response = Curl::Easy.http_post server_url, params.map { |k, v| "#{k}=#{CGI.escape v}" }.join("&")
   if response.response_code != 200
     Trollop::die "Unexpected HTTP response code #{response.response_code} posting to #{server_url}"
   end
