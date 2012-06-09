@@ -15,9 +15,9 @@ spec = Gem::Specification.new do |s|
  s.description = "Heliotrope is a personal, threaded, search-centric email server."
 
  s.add_dependency 'trollop', '>= 1.16.2'
- s.add_dependency 'whistlepig', '>= 0.7'
+ s.add_dependency 'whistlepig', '>= 0.12'
  s.add_dependency 'rmail', '>= 1.0.0'
- s.add_dependency 'leveldb-ruby', '>= 0.7'
+ s.add_dependency 'leveldb-ruby', '>= 0.13'
 
  s.add_dependency 'locale'
 
