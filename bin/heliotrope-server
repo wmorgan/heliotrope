@@ -642,7 +642,26 @@ end
 FileUtils.mkdir_p opts.dir
 FileUtils.mkdir_p File.join(opts.dir, "index")
 store = LevelDB::DB.new File.join(opts.dir, "store")
-index = Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
+index = begin
+  Whistlepig::Index.new File.join(opts.dir, "index", "whistlepig")
+rescue Whistlepig::VersionError => e
+  puts <<EOS
+ERROR
+-----
+
+Whistlepig index incompatibility detected!
+Details: #{e.message}
+
+You have upgraded to a version of Whistlepig that represents its data
+differently. You need to rebuild your index. To do this, please run:
+
+  heliotrope-reindex --dir #{opts.dir}
+
+And then restart the server. Heliotrope apologizes for any inconvenience.
+EOS
+  abort
+end
+
 hooks = Heliotrope::Hooks.new File.join(opts.dir, "hooks")
 metaindex = Heliotrope::MetaIndex.load_or_die! store, index, hooks
 zmbox = Heliotrope::ZMBox.new File.join(opts.dir, "messages")
