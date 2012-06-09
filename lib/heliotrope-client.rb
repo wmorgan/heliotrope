@@ -127,7 +127,7 @@ private
         when "error"; raise Error, v.inspect
         else raise Error, "invalid response: #{v.inspect[0..200]}"
       end
-    rescue SystemCallError, Curl::Err, JSON::ParserError, SocketError, IOError => e
+    rescue SystemCallError, Curl::Err::CurlError, Curl::JSON::ParserError, SocketError, IOError => e
       raise Error, "#{e.message} (#{e.class})"
     end
   end
