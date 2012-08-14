@@ -39,7 +39,7 @@ PREPARING YOURSELF
 GETTING IT
 
 Once Heliotrope is more stable, you will be able to install it via rubygems.
-For you, you should run this:
+For now, you should run this:
 
   git clone https://github.com/wmorgan/heliotrope.git
 
@@ -54,19 +54,19 @@ Congrats! You're running Heliotrope.
 
 IMPORTING EXISTING MAIL STORES
 
-To bulk import mail, use heltrope-import. You must stop your server first.
+To bulk import mail, use heliotrope-import. You must stop your server first.
 
 To add a pre-existing mbox:
   ruby -Ilib bin/heliotrope-import -m <mbox> -d <mailstore>
 
 To add a pre-existing maildir:
-  ruby -Ilib bin/heliotrope-import -a <maildir> -d <mailstore>
+  ruby -Ilib bin/heliotrope-import -l <maildir> -d <mailstore>
 
 To add a pre-existing Gmail account:
   ruby -Ilib bin/heliotrope-import -g <gmail username> -d <mailstore>
 
 To add a pre-existing, non-Gmail IMAP account:
-  ruby -Ilib bin/heliotrope-import -i <imap server> -d <mailstore>
+  ruby -Ilib bin/heliotrope-import -p <imap server> -d <mailstore>
 
 For testing purposes, you may want to limit the number of emails added by
 using the --num-messages option. If you additionally use the --state-file
