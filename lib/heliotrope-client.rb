@@ -101,7 +101,7 @@ private
     handle_errors do
       curl = Curl::Easy.http_post URI.join(@url, path + ".json").to_s, encode_params(params)
       if curl.response_code != 200
-        raise Error, "Unexpected HTTP response code #{@url.response_code} posting to #{curl.url}"
+        raise Error, "Unexpected HTTP response code #{curl.response_code} posting to #{curl.url}"
       end
       response = curl.body_str
       response.force_encoding Encoding::UTF_8 if in_ruby19_hell?
