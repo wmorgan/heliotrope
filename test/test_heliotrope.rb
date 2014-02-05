@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'test/unit'
 require 'fileutils'
 require 'digest/md5'
@@ -392,6 +394,16 @@ class HeliotropeTest < ::Test::Unit::TestCase
     @metaindex.prune_labels!
     assert_includes "muffin", @metaindex.all_labels
     assert_does_not_include "potato", @metaindex.all_labels
+  end
+
+  def test_recognize_charset
+    msg = nil
+    File.open('test/broken_charset.msg', 'r') do |f|
+      msg = Heliotrope::Message.new(f).parse!
+    end
+    assert_not_nil msg
+    mime_parts = msg.mime_parts "text/plain"
+    assert_equal mime_parts, [["text/plain; charset = \"utf-8\"", nil, nil, "\nAFS2012 -> Aufgaben -> Punkte Übung 1\n---------------------------------------------------------------------\nLutz Strüngmann hat einen Kommentar zu Ihrer eingereichten Aufgabe 'Punkte\nÜbung 1' verfasst.\n\nSie finden ihn im Anhang Ihrer abgegebenen Aufgabe:\n\nhttp://moodle.hs-mannheim.de/mod/assignment/view.php?id=11205\n---------------------------------------------------------------------\n\n\n"]]
   end
 
 private

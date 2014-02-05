@@ -257,7 +257,7 @@ private
 
     mt = mime_type_for(mime_part) || "text/plain" # i guess
     content_type = if mt =~ /^(.+);/ then $1.downcase else mt end
-    source_charset = if mt =~ /charset="?(.*?)"?(;|$)/i then $1 else "US-ASCII" end
+    source_charset = if mt =~ /charset\s*=\s*"?(.*?)"?(;|$)/i then $1 else "US-ASCII" end
 
     content = mime_part.decode
     converted_content, converted_charset = if(converter = CONVERSIONS[[content_type, preferred_type]])
